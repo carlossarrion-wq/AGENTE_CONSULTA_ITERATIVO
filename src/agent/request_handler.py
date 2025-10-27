@@ -98,23 +98,27 @@ class RequestHandler:
     
     def _format_tool_results_for_llm(self, tool_results: ConsolidatedResults) -> str:
         """
-        Formatea los resultados de las herramientas para enviarlos al LLM
+        Formatea los resultados de las herramientas para enviarlos al LLM.
+        IMPORTANTE: Este método envía TODA la información al LLM para que pueda analizarla,
+        pero esta información NO se muestra en pantalla (solo va al LLM internamente).
         
         Args:
             tool_results: Resultados consolidados de las herramientas
             
         Returns:
-            String formateado con los resultados
+            String formateado con los resultados COMPLETOS para el LLM
         """
         message = "## Resultados de las Herramientas Ejecutadas\n\n"
+        message += "IMPORTANTE: Analiza estos resultados y proporciona una respuesta útil al usuario. "
+        message += "NO repitas toda esta información en tu respuesta, solo extrae lo relevante.\n\n"
         
         for result in tool_results.results:
-            tool_name = result.tool_type.value  # Obtener el valor del Enum
+            tool_name = result.tool_type.value
             message += f"### Herramienta: {tool_name}\n"
             message += f"- Estado: {'✅ Exitosa' if result.success else '❌ Fallida'}\n"
             message += f"- Tiempo de ejecución: {result.execution_time_ms:.2f}ms\n"
             
-            if result.success and result.data:  # Usar 'data' en lugar de 'result'
+            if result.success and result.data:
                 message += f"\n**Resultados:**\n"
                 
                 # Formatear según el tipo de herramienta
@@ -129,7 +133,7 @@ class RequestHandler:
                 else:
                     message += f"```\n{str(result.data)}\n```\n"
             elif not result.success:
-                message += f"\n**Error:** {result.error}\n"  # Usar 'error' en lugar de 'error_message'
+                message += f"\n**Error:** {result.error}\n"
             
             message += "\n---\n\n"
         
@@ -137,12 +141,15 @@ class RequestHandler:
         message += f"- Total de herramientas ejecutadas: {tool_results.total_tools_executed}\n"
         message += f"- Exitosas: {tool_results.successful_executions}\n"
         message += f"- Fallidas: {tool_results.failed_executions}\n"
-        message += f"\nPor favor, analiza estos resultados y proporciona una respuesta completa y útil al usuario.\n"
         
         return message
     
     def _format_search_results(self, results: Dict[str, Any]) -> str:
-        """Formatea resultados de búsqueda con TODA la información de OpenSearch"""
+        """
+        Formatea resultados de búsqueda con TODA la información de OpenSearch.
+        Este método formatea para el LLM, NO para mostrar en pantalla.
+        Los logs detallados ya se escriben en el archivo de log.
+        """
         formatted = ""
         
         if 'fragments' in results and results['fragments']:
