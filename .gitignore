@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+ENV/
+env/
+
+# Logs
+*.log
+logs/
+*.pid
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+agent.log
+tunnel.log
+tunnel.pid
+sessionmanager-bundle/
+sessionmanager-bundle.zip
+
+# Sensitive data
+config/config_local.yaml
+*.pem
+*.key
+
+# Large data files
+Summaries/

@@ -1,0 +1,241 @@
+{
+  "metadata": {
+    "total_files": 29,
+    "processed_at": "2025-10-26T17:18:41.355171",
+    "directory": "Summaries"
+  },
+  "files": [
+    {
+      "file_name": "Activar Pagina de Cortesia.pdf",
+      "file_size": 637062,
+      "file_extension": ".pdf",
+      "summary_id": "d2c76d66eecc9bff1ec23fc040ad65b9ee2f153f11e31c751411d0f878ee7504.json",
+      "summary": "Este documento describe el proceso para activar la página de cortesía en el sistema DARWIN. El proceso implica acceder a la función Lambda \"RedirectCourtesyPage\" en la región us-east-1 de AWS, copiar el ARN (Amazon Resource Name) de la función y luego actualizar la configuración de la distribución de CloudFront correspondiente. Específicamente, se debe modificar los valores de \"View request\" y \"Origins request\" en el comportamiento de la distribución de CloudFront para que apunten al ARN de la función Lambda. Este proceso permite redirigir a los usuarios a una página de cortesía cuando se produzcan determinados eventos o condiciones en el sistema DARWIN.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Alta Agencia - Checklist (plantilla) v01.xlsx",
+      "file_size": 37551,
+      "file_extension": ".xlsx",
+      "summary_id": "e0376867ff6e001fa5c54628d63ce110088f39ffeb0c07d269105e581d0b087d.json",
+      "summary": "Este documento describe el proceso de alta de una nueva agencia en el sistema DARWIN. El proceso incluye tareas como la formalización de la petición en Jira, la entrega de documentación técnica a la agencia, la configuración de usuarios y permisos, la habilitación de carpetas SFTP, la validación de los endpoints de integración, y la realización de pruebas de aceptación. El documento detalla las responsabilidades de los diferentes equipos (Digitalización, Negocio, Darwin) en cada una de las tareas, así como los plazos y estados de seguimiento. El objetivo final es asegurar una integración correcta de la nueva agencia con todos los sistemas y procesos de DARWIN.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Alta Canal - Formulario.xlsx",
+      "file_size": 20519,
+      "file_extension": ".xlsx",
+      "summary_id": "f3b29053b3639477e245230641da6660ce873337c3b6142eaa07ef981ea29fcf.json",
+      "summary": "Este documento describe la configuración de un nuevo canal de ventas en el sistema DARWIN de Naturgy. Incluye campos para definir el nombre del canal, la sociedad asociada (Naturgy Iberia), el tipo de canal (venta telefónica, presencial, web, etc.), la carpeta SFTP para almacenar documentación, y opciones como permitir adjuntar audios o si son obligatorios. También se indica si el canal está creado en los sistemas Siebel y Salesforce, y si tiene afectación en Callidus. En una hoja auxiliar se listan los diferentes tipos de canales con sus códigos correspondientes en la base de datos.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Alta Canal CdP.xlsx",
+      "file_size": 21240,
+      "file_extension": ".xlsx",
+      "summary_id": "f79ca312d803b678e1871967c2939489799277edc8af95ef07d94c5063a90ec7.json",
+      "summary": "Este documento detalla el plan de pruebas para el alta de un nuevo canal en el sistema DARWIN, tanto para la sociedad Naturgy como para Naturgy Clientes (Newco). El proceso cubre la configuración del canal en diferentes módulos del sistema (usuarios, productos, servicios, campañas, limitaciones), así como la validación de su correcto funcionamiento en los flujos de contratación, incluyendo aspectos como la obligatoriedad de audios, la verificación de pedidos y el comportamiento en el canal de Venta Telefónica. También se verifica la visibilidad del nuevo canal en la trastienda y la posibilidad de adjuntar documentación. El documento proporciona detalles técnicos sobre la implementación y prueba de este nuevo canal en DARWIN.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Alta Canal.docx",
+      "file_size": 528929,
+      "file_extension": ".docx",
+      "summary_id": "20f8e4982b8e3c3f1c518af20b78e85c53fbab4a7e4bf6751fa163c02bb062e3.json",
+      "summary": "El documento \"Alta Canal.docx\" describe el proceso de incorporación de un nuevo canal de ventas en el sistema DARWIN. El documento detalla los pasos a seguir, incluyendo la solicitud de información sobre el funcionamiento del nuevo canal, la creación del canal en la base de datos mediante migración o comandos, y la asociación del canal a una agencia y compañía. Se proporcionan ejemplos concretos de los comandos y sentencias SQL necesarios para dar de alta el nuevo canal, incluyendo la generación de un ID único, la inserción en tablas como \"channels\" y \"aviva_config\", y la creación de la relación en \"channels_companies\" y \"channels_offers\". El documento también menciona la necesidad de incluir un \"down\" en las migraciones para poder revertir los cambios. En general, el documento proporciona una guía detallada y técnica sobre el proceso de incorporación de un nuevo canal en el sistema DARWIN.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Alta_nuevo_tipo_energía.docx",
+      "file_size": 154517,
+      "file_extension": ".docx",
+      "summary_id": "0ce6a0f97b1b1460502f73d2ed49103ee427365d67d2f43d7300606cb2209cbc.json",
+      "summary": "Este documento describe el proceso para dar de alta un nuevo tipo de energía en el sistema DARWIN. El proceso implica varios pasos, comenzando con la recopilación de la información necesaria sobre el nuevo tipo de energía, como el nombre. Luego, se utiliza el mecanismo de migraciones de Doctrine para generar e implementar los cambios en la base de datos. Esto incluye crear una nueva migración, ejecutar la migración para aplicar los cambios, y la posibilidad de deshacer la última migración o migrar a una versión específica. Finalmente, se da de alta el nuevo tipo de energía en la base de datos, asignándole un ID único. El documento proporciona ejemplos concretos de los comandos a ejecutar y la estructura de la migración, que consta de una descripción y las operaciones de inserción y borrado.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Añadir Actualizar imágenes de productos.pdf",
+      "file_size": 138348,
+      "file_extension": ".pdf",
+      "summary_id": "44a7562060343c5572d9210003647424c6ea39d004c84796bb7d7449ea8c69a6.json",
+      "summary": "Este documento describe el proceso para añadir o actualizar las imágenes de los productos que se muestran en el funnel de ventas de DARWIN. Indica que, cuando Naturgy solicita un cambio de imagen, se debe actualizar el archivo almacenado en el bucket S3 al que apunta la imagen en el front-end. Para productos nuevos, se debe cargar la imagen a la ruta \"naturgy-zapotek-pro/public_images/\" y actualizar el campo \"image\" en la base de datos del producto con la URL de la nueva imagen. El documento proporciona instrucciones claras sobre cómo realizar estos cambios de imágenes en el sistema.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Arrancar instancia.docx",
+      "file_size": 21249,
+      "file_extension": ".docx",
+      "summary_id": "c8b7e6982d0bd01cf23246f2b5ffa40416e9c8f259c6d6ca85277d67e9dd6337.json",
+      "summary": "El documento \"Arrancar instancia.docx\" proporciona instrucciones para iniciar una instancia del sistema DARWIN, una aplicación que se ejecuta en la plataforma de servicios de infraestructura en la nube de AWS. El documento explica que para arrancar la instancia de DARWIN, el usuario debe acceder al portal de aplicaciones en la nube de Naturgy, introducir sus credenciales de usuario (email 900XXXX@es.naturgy.com y contraseña) y luego abrir la aplicación PT-DARWIN en los servicios de infraestructura de la nube. El documento también menciona que el usuario puede iniciar la instancia directamente desde el portal de aplicaciones en la nube de Naturgy.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Baja Canal.docx",
+      "file_size": 69029,
+      "file_extension": ".docx",
+      "summary_id": "a682eb8e1d8ade376519c07ced45a540d1dee3129856e0925bd6646f96432085.json",
+      "summary": "El documento describe el proceso para dar de baja un canal en el sistema DARWIN. Los pasos principales son: 1) Obtener la información necesaria, incluyendo el ID del canal a eliminar y, opcionalmente, el ID del canal de oferta al que se desea transferir el historial de pedidos. 2) Ejecutar un comando en la terminal del sistema para realizar la baja del canal, utilizando los parámetros obtenidos en el paso anterior. El documento proporciona ejemplos concretos de los comandos a ejecutar, tanto para dar de baja el canal sin transferir historial, como para dar de baja el canal y transferir el historial a otro canal de oferta.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "CARGA DATOS TÉCNICOS - Manual.docx",
+      "file_size": 933101,
+      "file_extension": ".docx",
+      "summary_id": "2c33c33ac8e174247c18116ed3ed348c7051e57a6533ffce914814caee86d76c.json",
+      "summary": "El documento describe el proceso de carga de datos técnicos en el sistema DARWIN, que se realiza mensualmente a través de ficheros generados por BIMA. Estos ficheros se cargan en un servidor de AWS con Logstash, que los procesa e inserta en índices de Elasticsearch. Para evitar periodos de caída, se utilizan dos índices por tipo de energía (electricidad y gas), y se gestiona la alternancia de los índices a través de aliases. El documento detalla los pasos para la carga en entornos de integración y producción, incluyendo la eliminación de índices, la asociación de aliases, y la validación de la carga en Kibana. También se incluyen instrucciones para eliminar un CUPS específico del Elastic.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "DAR - Activación semáforo y monitorización asociada v02.docx",
+      "file_size": 91313,
+      "file_extension": ".docx",
+      "summary_id": "78c9dc2546fe3e708b259c2e2b3010713bc3893344b2b49b7b9f6bf69891e49f.json",
+      "summary": "Este documento describe el proceso de activación y desactivación del semáforo de envío de pedidos desde DARWIN a los sistemas transaccionales (Siebel y Salesforce), así como la monitorización asociada a dicho proceso. El semáforo se configura a nivel de sociedad (Imperial, Newco y Portabilidad Masiva) y controla el flujo de envío de pedidos, permitiendo habilitar o deshabilitar temporalmente este proceso. La monitorización incluye métricas clave como el número de pedidos embalsados en DARWIN, fallidos técnicos en MuleSoft, pedidos listos para enviar y el estado del proceso en MuleSoft. Esto permite hacer un seguimiento end-to-end del flujo de pedidos entre los diferentes sistemas.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "DAR - Alta usuarios v01.pdf",
+      "file_size": 396233,
+      "file_extension": ".pdf",
+      "summary_id": "b1c92484e137210087c247f6af23b2d04fbd221b1c96955c6d79505d45ad6d25.json",
+      "summary": "El documento describe los procesos de alta de usuarios en el sistema DARWIN, incluyendo los campos requeridos (user_id, parent_user_id, seller_code, email, user_role, agency_code, user_groups, company, state, cif) y las funcionalidades asociadas a cada rol de usuario (sales agent, manager, admin). Se presentan varias hipótesis sobre la gestión de visibilidad de ventas entre diferentes managers y vendedores, donde un manager puede ver las ventas de todos los usuarios que dependen de él en la jerarquía. También se aborda el caso de un manager que pertenece a múltiples empresas y debe visualizar las ventas de cada una. El documento proporciona detalles técnicos sobre la estructura y relaciones entre usuarios, roles y permisos en el sistema.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Darwin (interno) - Pasos_incorporación_nueva_agencia_v1.1 (1).docx",
+      "file_size": 1248401,
+      "file_extension": ".docx",
+      "summary_id": "2e32840db2f7eee81c7b013a79cc01b108996245ab042f7a02aa03a3a031e198.json",
+      "summary": "El documento describe los pasos a seguir para la incorporación de una nueva agencia en el sistema DARWIN. Incluye la información que se debe proporcionar a la agencia (especificaciones técnicas, ejemplos de JSON, detalles de conexión), los pasos para crear el directorio SFTP y el usuario correspondiente, y los pasos para dar de alta la agencia en la base de datos de DARWIN. También se detallan los comandos específicos a ejecutar en Kubernetes para crear la agencia y asociarla a un canal de venta. El documento cubre aspectos técnicos como la gestión de claves SSH, la creación de usuarios SFTP y la integración con sistemas externos como Siebel y Salesforce.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Darwin - Contexto Integración para Agencias en VT.pdf",
+      "file_size": 701400,
+      "file_extension": ".pdf",
+      "summary_id": "04d18270e599af6ab6d6aa48ce73d3fdc789431e3c6b4584fb72ca656ab96a55.json",
+      "summary": "Este documento describe el proceso de venta telefónica en el sistema DARWIN, el Frontal Único de Ventas de Naturgy. Explica los actores involucrados (agencia, DARWIN, AVIVA, E-Voluciona, SIRCA) y los pasos del flujo de venta telefónica, incluyendo la toma de datos del cliente, la firma digital con AVIVA, el envío de la locución a la agencia y el posterior volcado de la locución en el SFTP de DARWIN. El documento también detalla las dos integraciones clave entre DARWIN y los sistemas de la agencia: el envío de información para la generación de la locución y el guardado de la locución finalizada en el SFTP de DARWIN. Se incluyen detalles técnicos como los endpoints de las APIs y los hosts SFTP utilizados.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Darwin - Req técnicos endpoint agencia v01.docx",
+      "file_size": 91778,
+      "file_extension": ".docx",
+      "summary_id": "51ab0e0947c6a8b75c712ae54989b396411c57c9668f35bc989d01fafc137dd0.json",
+      "summary": "Este documento describe los requisitos técnicos para la integración entre el sistema DARWIN y los endpoints de las agencias que realizan la locución de llamadas telefónicas. El objetivo es que las agencias implementen un servicio REST API que cumpla con ciertos requisitos, como utilizar el protocolo HTTPS, no requerir autenticación y permitir el acceso desde las IPs de salida de DARWIN. Cuando DARWIN realiza una llamada POST al endpoint de la agencia, este recibe información detallada sobre el cliente y la contratación, incluyendo datos personales, productos, tarifas y consumos. Con esta información, la agencia debe generar dos archivos de audio: uno con la locución completa y otro con el extracto del texto legal. Estos archivos se deben depositar en un SFTP proporcionado por DARWIN siguiendo una nomenclatura específica.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Dashboard.docx",
+      "file_size": 451670,
+      "file_extension": ".docx",
+      "summary_id": "ff02e8a8e9b0e6ed215d331a8ea009b606fe3174c53eec62a74fa6e4f1e48854.json",
+      "summary": "El documento describe un Dashboard dentro del sistema DARWIN que permite visualizar información sobre los embalsados y errores funcionales tanto de Siebel como de Salesforce. El Dashboard consta de varias gráficas que muestran datos de pedidos, con una vista semanal y otra de las últimas 24 horas. El documento también proporciona instrucciones detalladas sobre la instalación y configuración del proyecto, incluyendo requisitos previos, variables de entorno y pasos de ejecución. Se explica que el proyecto utiliza Python 3.11 o superior, junto con bibliotecas como Streamlit, Psycopg2, Pandas y SQLAlchemy.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Ejemplo importación usuario Admin.xlsx",
+      "file_size": 23729,
+      "file_extension": ".xlsx",
+      "summary_id": "e3963ab95570f9335801a80efe560379ee1a1773d6a67fe1da16c7ad7b0ce6db.json",
+      "summary": "Este documento es un ejemplo de una hoja de cálculo de importación de usuarios para el sistema DARWIN. La hoja \"ALTAS\" contiene información sobre un usuario con el rol de administrador (ROLE_ADMIN) en la empresa EIM, con el correo electrónico adrian.garciam@viewnext.com. Los campos clave incluyen el ID de usuario, el código del vendedor, el rol de usuario, el código de agencia, los grupos de usuarios y el estado de la cuenta (ALTA). Este tipo de archivo se utiliza para cargar de forma masiva usuarios y sus perfiles de acceso en el sistema DARWIN.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Ejemplo importación usuario.xlsx",
+      "file_size": 24701,
+      "file_extension": ".xlsx",
+      "summary_id": "6c7201490160f6e4019f5ce2c4620ae912d03a7cf33f4f686d3fe81dfc792258.json",
+      "summary": "El documento \"Ejemplo importación usuario.xlsx\" contiene información sobre la importación de un usuario en el sistema DARWIN. La hoja \"ALTAS\" muestra los detalles del usuario, incluyendo su ID, ID del usuario padre, código de vendedor, dirección de correo electrónico, rol de usuario (ROLE_SALES_AGENT), código de agencia, grupos de usuarios, compañía, estado (ALTA) y CIF. Este archivo de importación permite dar de alta nuevos usuarios en el sistema, asignándoles roles y permisos específicos para realizar tareas de ventas y gestión dentro de la aplicación DARWIN.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Embalsados.docx",
+      "file_size": 7585720,
+      "file_extension": ".docx",
+      "summary_id": "018d821eb7e85c2741a532a2e6ee1a0569439c25265a2b5fe4503e334fc5530d.json",
+      "summary": "Este documento proporciona instrucciones detalladas sobre el uso de la plataforma Anypoint de MuleSoft para monitorizar y gestionar los flujos de integración de la aplicación DARWIN. Cubre aspectos como la visualización de errores y logs, la consulta de embalsados, la activación/desactivación del semáforo de envío a Siebel, y la apertura de incidencias de escalado. El documento explica cómo acceder a Anypoint, navegar por sus diferentes módulos (Monitoring, Runtime Manager), y ejecutar consultas SQL específicas para obtener información sobre el estado de las integraciones. También detalla los pasos a seguir para comunicar incidencias de rendimiento a los equipos de soporte. En general, este manual proporciona a los usuarios de DARWIN las instrucciones necesarias para monitorizar y gestionar proactivamente los flujos de integración entre los diferentes sistemas.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "FD-Darwin_Funcional0_v2.9.docx",
+      "file_size": 14237785,
+      "file_extension": ".docx",
+      "summary_id": "1a079c63f81cc65c0460c8426dd74ede1f693dfdaf5da4d68844f1a68d795690.json",
+      "summary": "Este documento describe en detalle la especificación funcional del módulo de Contratación del sistema DARWIN, el Frontal Único de Ventas (FUV) de Naturgy. Presenta los objetivos, glosario y una descripción exhaustiva de los procesos de contratación asistida y no asistida, incluyendo la lógica de búsqueda de direcciones, validaciones, scoring, manejo del bono social y la integración con sistemas externos como Siebel, Salesforce y Aviva. También aborda funcionalidades clave como la Tarifa Plana, la Batería Virtual, la selección de alianzas y la firma de contratos. Además, se detallan aspectos técnicos como la gestión de usuarios, la administración de pedidos fallidos, la normalización de direcciones y la integración con otros sistemas.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Front super admin.docx",
+      "file_size": 40254,
+      "file_extension": ".docx",
+      "summary_id": "4897a2e9ff0467e5c53e0c727b8fc2242e34071958417f29c7511a972c07cbdc.json",
+      "summary": "El documento \"Front super admin.docx\" proporciona instrucciones para agregar un usuario superadministrador en la interfaz de usuario frontal del sistema DARWIN. Describe los pasos necesarios para modificar un archivo específico con el fin de habilitar el acceso de superadministrador. Este perfil de usuario con privilegios elevados permite realizar tareas de configuración y administración avanzadas dentro de la aplicación.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Importación usuarios.xlsx",
+      "file_size": 18542,
+      "file_extension": ".xlsx",
+      "summary_id": "d808803a4ab40d2c1cd1183a3fc778f58266e54c79cb238150936089a1534091.json",
+      "summary": "Este documento Excel titulado \"Importación usuarios.xlsx\" contiene información sobre la importación de usuarios al sistema DARWIN. La hoja \"ALTAS\" muestra los detalles de un usuario con ID 90089202, que tiene el rol de \"ROLE_SALES_AGENT\" (agente de ventas) y pertenece al grupo \"TODOS\" en la agencia con código \"NaN\". El usuario tiene un correo electrónico asociado \"mail@mail.es\" y no tiene un usuario padre (\"parent_user_id\"). Además, se indica que el usuario tiene un CIF \"A08431090\" y un centro de ventas (\"sales_center\") no especificado.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Manual alta usuarios PRE.docx",
+      "file_size": 104619,
+      "file_extension": ".docx",
+      "summary_id": "2a1217a1db8b559c1c4fe41907d7a9a97ccde20a5d6104bc498af32ce0255e39.json",
+      "summary": "Este documento describe el proceso de alta de usuarios en el sistema DARWIN PRE. Explica los pasos necesarios para crear usuarios en la base de datos de DARWIN, asignándoles el rol y grupo de usuarios correspondiente. También detalla el proceso de registro que deben seguir los usuarios para acceder a la aplicación DARWIN PRE, incluyendo la información que deben proporcionar (email, usuario 900 o 000, y contraseña). El documento incluye una tabla de control de versiones con información sobre la creación y revisión del manual.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Querys BDD.docx",
+      "file_size": 26730,
+      "file_extension": ".docx",
+      "summary_id": "7157b5cc9cba89949b5e32d9fd2faebd1ab605ac5c068ced818713ac081324ef.json",
+      "summary": "Este documento contiene consultas SQL que se utilizan en el sistema DARWIN para extraer información sobre pedidos, direcciones, líneas de pedido, datos técnicos, canales de venta y estados de los pedidos. Las consultas permiten acceder a tablas como orders, leads, orderlines, technical_info_electricity, technical_info_gas, channels, companies y portability. Además, se incluyen consultas específicas para obtener detalles sobre el estado de los pedidos, como validaciones, motivos de rechazo y cancelación. También se muestra una consulta para analizar la carga masiva de portabilidad, incluyendo el estado de la carga y el estado de los pedidos en DARWIN.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "README.MD.txt",
+      "file_size": 1341,
+      "file_extension": ".txt",
+      "summary_id": "b1e0a92a8bbeb09377b047e177c0ea16001e5b589362786a1c0c477610ee5884.json",
+      "summary": "Este documento README.md proporciona las instrucciones de instalación y los requisitos previos para ejecutar un proyecto relacionado con el sistema DARWIN. El proyecto requiere el uso de variables de entorno globales para conectarse a la base de datos de producción de DARWIN y MuleSoft. Además, necesita Python 3.11 o superior, así como varias bibliotecas Python como Streamlit, psycopg2, pandas y SQLAlchemy. El proceso de instalación implica clonar el repositorio, instalar las dependencias usando pipenv o pip, y ejecutar el proyecto con el comando \"streamlit run main.py\" dentro del entorno virtual. El objetivo final es acceder a la aplicación a través de http://localhost:8501.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "SD_Desacople Maestro Direcciones_IQP (1).docx",
+      "file_size": 517961,
+      "file_extension": ".docx",
+      "summary_id": "c6205b1ad6405f7847c6bec5ca9b35f9b371eca61ca4499abb1bed0024a4afea.json",
+      "summary": "El documento Solution Design \"SD_Desacople Maestro Direcciones_IQP (1).docx\" describe el diseño de software para el proyecto DAR-4087 \"Desacople Maestro Direcciones\" en el sistema DARWIN. El objetivo es asegurar la contratación en caso de caída del maestro de direcciones. El documento detalla los requisitos funcionales y no funcionales, incluyendo la implementación de una caché que almacena direcciones consultadas en los últimos 7 días. Cuando el maestro de direcciones no está disponible, el sistema consultará primero la caché y, si no encuentra la dirección, habilitará un modal manual para que el usuario pueda introducir los datos de forma libre. Esto permitirá continuar con el flujo de contratación, aunque las direcciones se marcarán como \"Fallido por dirección no normalizada\" para su posterior gestión. El documento también incluye detalles sobre el impacto en otros sistemas, el modelo conceptual, el flujo de navegación y los criterios de aceptación.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "Soporte - Alta agencia.docx",
+      "file_size": 254433,
+      "file_extension": ".docx",
+      "summary_id": "4ad4f5e78e3ad5dd3284033db650d96d562ac9a4a3cb0af8836cf276657963c5.json",
+      "summary": "Este documento describe el proceso de alta de una nueva agencia en el sistema DARWIN. Para dar de alta una agencia, se requiere proporcionar información como el código de la agencia, el nombre, la compañía a la que dará servicio (Naturgy Iberia, Naturgy Clientes o ambas), y la URL donde se enviarán los datos. El alta en DARWIN se realiza a través de dos comandos de consola: uno para crear la agencia y otro para asociarla a un canal. Adicionalmente, se debe dar de alta la agencia en la infraestructura física, generando llaves SSH para que la agencia pueda dejar las locuciones en el SFTP. El proceso detalla los pasos específicos para generar estas llaves SSH tanto en Windows (usando PuTTY Key Generator) como en Linux (usando ssh-keygen).",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "gestion-de-agencias.pdf",
+      "file_size": 745731,
+      "file_extension": ".pdf",
+      "summary_id": "ec3a66ac386c9aa2c7808c8fae89d8ea872400eae5b538c7a546917ccdada4ce.json",
+      "summary": "Este documento describe el proceso de gestión de agencias en el sistema DARWIN. Incluye los pasos para dar de alta una nueva agencia, tanto en el sistema DARWIN como en la infraestructura física (Physical Infra). Para el alta en DARWIN, se detallan los comandos de consola necesarios para crear la agencia y asociarla a un canal y compañía. Para el alta en Physical Infra, se requiere abrir un ticket con Kyndryl solicitando el alta y proporcionando información como el código y nombre de la agencia, así como generar y compartir llaves SSH específicas para cada entorno (desarrollo, preproducción y producción). También se menciona un pendiente relacionado con el cambio de URL de la agencia. El documento proporciona instrucciones específicas para generar las llaves SSH en Windows y Linux.",
+      "application_id": "darwin"
+    },
+    {
+      "file_name": "requirements.txt",
+      "file_size": 2506,
+      "file_extension": ".txt",
+      "summary_id": "5abf3a78e2f6e9c437b3a89b0521f51091985b80f54dd91e2813a72eb978e7ff.json",
+      "summary": "Este documento describe los requisitos de paquetes Python necesarios para el sistema DARWIN. Incluye una lista exhaustiva de las bibliotecas y dependencias requeridas, como Altair, Pandas, Streamlit y otras herramientas de análisis de datos, visualización e integración. Estas librerías cubren funcionalidades clave como la gestión de archivos, interacción con bases de datos, procesamiento de datos, generación de informes y despliegue de aplicaciones web. El documento especifica las versiones mínimas requeridas de cada paquete, así como restricciones de compatibilidad con determinados sistemas operativos y versiones de Python. Esta información es fundamental para garantizar un entorno de desarrollo y ejecución estable y consistente para el sistema DARWIN.",
+      "application_id": "darwin"
+    }
+  ]
+}
