@@ -146,36 +146,42 @@ class RequestHandler:
     
     def _format_search_results(self, results: Dict[str, Any]) -> str:
         """
-        Formatea resultados de búsqueda con TODA la información de OpenSearch.
-        Este método formatea para el LLM, NO para mostrar en pantalla.
-        Los logs detallados ya se escriben en el archivo de log.
+        Formatea resultados de búsqueda SOLO CON INFORMACIÓN RESUMIDA para el LLM.
+        NO se envía el contenido completo para evitar que el LLM lo repita en pantalla.
+        El contenido completo está disponible en los logs para debugging.
         """
         formatted = ""
         
         if 'fragments' in results and results['fragments']:
-            formatted += f"Se encontraron {len(results['fragments'])} fragmentos relevantes:\n\n"
+            total_fragments = len(results['fragments'])
+            formatted += f"Se encontraron {total_fragments} fragmentos relevantes.\n\n"
+            formatted += "**Información resumida de los fragmentos:**\n\n"
             
-            # INCLUIR TODOS LOS FRAGMENTOS (no limitar a 5)
-            for i, fragment in enumerate(results['fragments'], 1):
-                formatted += f"{i}. **{fragment.get('file_name', 'Desconocido')}**\n"
-                
-                # Incluir score de relevancia
-                if 'score' in fragment:
-                    formatted += f"   - Relevancia: {fragment['score']:.4f}\n"
-                
-                # Incluir file_path si existe
-                if 'file_path' in fragment:
-                    formatted += f"   - Ruta: {fragment['file_path']}\n"
-                
-                # Incluir summary si existe
-                if 'summary' in fragment:
-                    formatted += f"   - Resumen: {fragment['summary']}\n"
-                
-                # INCLUIR CONTENIDO COMPLETO (sin truncar)
-                content = fragment.get('content', '')
-                if content:
-                    formatted += f"   - Contenido completo:\n```\n{content}\n```\n"
-                
+            # Agrupar por archivo para evitar repetición
+            files_dict = {}
+            for fragment in results['fragments']:
+                file_name = fragment.get('file_name', 'Desconocido')
+                if file_name not in files_dict:
+                    files_dict[file_name] = {
+                        'count': 0,
+                        'max_score': 0,
+                        'content_preview': ''
+                    }
+                files_dict[file_name]['count'] += 1
+                score = fragment.get('score', 0)
+                if score > files_dict[file_name]['max_score']:
+                    files_dict[file_name]['max_score'] = score
+                    # Solo guardar un preview del contenido más relevante
+                    content = fragment.get('content', '')
+                    files_dict[file_name]['content_preview'] = content[:500] if content else ''
+            
+            # Formatear resumen por archivo
+            for i, (file_name, info) in enumerate(sorted(files_dict.items(), key=lambda x: x[1]['max_score'], reverse=True), 1):
+                formatted += f"{i}. **{file_name}**\n"
+                formatted += f"   - Fragmentos encontrados: {info['count']}\n"
+                formatted += f"   - Relevancia máxima: {info['max_score']:.4f}\n"
+                if info['content_preview']:
+                    formatted += f"   - Vista previa: {info['content_preview'][:200]}...\n"
                 formatted += "\n"
         else:
             formatted += "No se encontraron resultados.\n"
