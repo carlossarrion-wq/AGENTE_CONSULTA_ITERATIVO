@@ -113,25 +113,40 @@ class ToolExecutor:
         tool_calls = []
         
         # Patrones regex para cada tipo de herramienta
+        # Soporta tanto el formato con prefijo tool_ como sin prefijo para compatibilidad
         patterns = {
-            ToolType.SEMANTIC_SEARCH: r'<semantic_search>(.*?)</semantic_search>',
-            ToolType.LEXICAL_SEARCH: r'<lexical_search>(.*?)</lexical_search>',
-            ToolType.REGEX_SEARCH: r'<regex_search>(.*?)</regex_search>',
-            ToolType.GET_FILE_CONTENT: r'<get_file_content>(.*?)</get_file_content>',
+            ToolType.SEMANTIC_SEARCH: [
+                r'<tool_semantic_search>(.*?)</tool_semantic_search>',
+                r'<semantic_search>(.*?)</semantic_search>'
+            ],
+            ToolType.LEXICAL_SEARCH: [
+                r'<tool_lexical_search>(.*?)</tool_lexical_search>',
+                r'<lexical_search>(.*?)</lexical_search>'
+            ],
+            ToolType.REGEX_SEARCH: [
+                r'<tool_regex_search>(.*?)</tool_regex_search>',
+                r'<regex_search>(.*?)</regex_search>'
+            ],
+            ToolType.GET_FILE_CONTENT: [
+                r'<tool_get_file_content>(.*?)</tool_get_file_content>',
+                r'<get_file_content>(.*?)</get_file_content>'
+            ],
         }
         
-        for tool_type, pattern in patterns.items():
-            matches = re.findall(pattern, llm_response, re.DOTALL)
-            
-            for match in matches:
-                # Parsear parámetros XML
-                params = self._parse_xml_params(match)
+        for tool_type, pattern_list in patterns.items():
+            for pattern in pattern_list:
+                matches = re.findall(pattern, llm_response, re.DOTALL)
                 
-                tool_calls.append({
-                    'tool_type': tool_type,
-                    'params': params,
-                    'raw_xml': match
-                })
+                for match in matches:
+                    # Parsear parámetros XML
+                    params = self._parse_xml_params(match)
+                    
+                    tool_calls.append({
+                        'tool_type': tool_type,
+                        'params': params,
+                        'raw_xml': match
+                    })
+        
         
         self.logger.debug(f"Extraídas {len(tool_calls)} llamadas a herramientas del LLM")
         return tool_calls
