@@ -240,7 +240,9 @@ class RegexSearch:
             "pattern": pattern,
             "total_matches": total_matches,
             "total_files": len(results),
-            "results": results,
+            "total_found": len(results),  # Compatible con otras herramientas
+            "results": results,  # Mantener para CLI
+            "fragments": results,  # Compatible con request_handler
             "search_type": "regex"
         }
 

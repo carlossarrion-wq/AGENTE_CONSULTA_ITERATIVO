@@ -348,11 +348,57 @@ Siempre proporciona respuestas claras, precisas y bien estructuradas."""
         if system_prompt is None:
             system_prompt = self.system_prompt
         
-        # Obtener historial conversacional
-        conversation_context = self.conversation_manager.get_conversation_context(session_id)
+        # IMPORTANTE: Agregar el turno del usuario ANTES de obtener el historial
+        # Esto asegura que el historial incluya el mensaje actual del usuario
+        self.conversation_manager.add_user_turn(
+            session_id=session_id,
+            message=user_input,
+            tokens=len(user_input.split())
+        )
+        
+        # Obtener configuración de sliding window
+        conversation_config = self.config.get_section('conversation')
+        enable_sliding_window = conversation_config.get('enable_sliding_window', True)
+        max_context_tokens = conversation_config.get('context_window_tokens', 180000)
+        
+        # Obtener estadísticas antes del trimming
+        conv_stats = self.conversation_manager.get_conversation_stats(session_id)
+        total_turns_before = conv_stats.get('total_turns', 0)
+        total_tokens_before = conv_stats.get('total_tokens', 0)
+        
+        # Obtener historial conversacional con sliding window si está habilitado
+        if enable_sliding_window:
+            # Usar trim_context_to_window para limitar por tokens
+            conversation_context = self.conversation_manager.trim_context_to_window(
+                session_id=session_id,
+                max_tokens=max_context_tokens
+            )
+            
+            # Calcular cuántos turnos se mantuvieron
+            turns_in_context = conversation_context.count('Human:')
+            turns_removed = total_turns_before // 2 - turns_in_context  # Dividir por 2 porque cada turno tiene user+assistant
+            
+            self.logger.info(f"🔄 Sliding window aplicado:")
+            self.logger.info(f"   • Límite de tokens: {max_context_tokens}")
+            self.logger.info(f"   • Turnos totales en conversación: {total_turns_before}")
+            self.logger.info(f"   • Turnos mantenidos en contexto: {turns_in_context}")
+            self.logger.info(f"   • Turnos eliminados (más antiguos): {turns_removed}")
+            self.logger.info(f"   • Tokens antes: {total_tokens_before}, después: ~{len(conversation_context.split())}")
+        else:
+            # Obtener historial completo (comportamiento anterior)
+            conversation_context = self.conversation_manager.get_conversation_context(session_id)
+            self.logger.info(f"ℹ️  Sliding window deshabilitado - usando historial completo ({total_turns_before} turnos)")
         
         # Construir historial en formato Bedrock
         conversation_history = self._build_conversation_history(conversation_context)
+        
+        # IMPORTANTE: El último mensaje del usuario ya está en el historial,
+        # pero Bedrock espera que el último mensaje de usuario esté separado
+        # Por lo tanto, si hay historial, debemos quitar el último mensaje de usuario
+        # y pasarlo como user_input
+        if conversation_history and conversation_history[-1]['role'] == 'user':
+            # Quitar el último mensaje de usuario del historial
+            conversation_history = conversation_history[:-1]
         
         # Crear request
         llm_request = LLMRequest(
@@ -368,13 +414,7 @@ Siempre proporciona respuestas claras, precisas y bien estructuradas."""
         # Enviar request
         response = self.send_request(llm_request)
         
-        # Actualizar historial conversacional
-        self.conversation_manager.add_user_turn(
-            session_id=session_id,
-            message=user_input,
-            tokens=len(user_input.split())
-        )
-        
+        # Actualizar historial conversacional con la respuesta del asistente
         self.conversation_manager.add_assistant_turn(
             session_id=session_id,
             response=response.content,
@@ -394,41 +434,48 @@ Siempre proporciona respuestas claras, precisas y bien estructuradas."""
         Returns:
             Lista de mensajes en formato Bedrock
         """
-        # Parsear contexto conversacional
-        # Formato esperado: "User: mensaje1\nAssistant: respuesta1\nUser: mensaje2\n..."
+        if not conversation_context or not conversation_context.strip():
+            return []
+        
+        # Parsear contexto conversacional buscando prefijos "Human:" y "Assistant:"
+        # Esta implementación es más robusta que dividir por \n\n porque los resultados
+        # de herramientas pueden contener \n\n internamente
         
         history = []
-        lines = conversation_context.strip().split('\n')
-        
         current_role = None
         current_content = []
         
-        for line in lines:
-            if line.startswith('User:'):
+        for line in conversation_context.split('\n'):
+            if line.startswith('Human:'):
+                # Guardar el turno anterior si existe
                 if current_role and current_content:
                     history.append({
-                        'role': 'user' if current_role == 'User' else 'assistant',
-                        'content': '\n'.join(current_content).replace(f'{current_role}: ', '', 1)
+                        'role': current_role,
+                        'content': '\n'.join(current_content).strip()
                     })
-                current_role = 'User'
-                current_content = [line]
+                # Iniciar nuevo turno de usuario
+                current_role = 'user'
+                current_content = [line.replace('Human:', '', 1).strip()]
             elif line.startswith('Assistant:'):
+                # Guardar el turno anterior si existe
                 if current_role and current_content:
                     history.append({
-                        'role': 'user' if current_role == 'User' else 'assistant',
-                        'content': '\n'.join(current_content).replace(f'{current_role}: ', '', 1)
+                        'role': current_role,
+                        'content': '\n'.join(current_content).strip()
                     })
-                current_role = 'Assistant'
-                current_content = [line]
+                # Iniciar nuevo turno de asistente
+                current_role = 'assistant'
+                current_content = [line.replace('Assistant:', '', 1).strip()]
             else:
+                # Continuar con el contenido del turno actual
                 if current_role:
                     current_content.append(line)
         
-        # Agregar último mensaje
+        # Guardar el último turno
         if current_role and current_content:
             history.append({
-                'role': 'user' if current_role == 'User' else 'assistant',
-                'content': '\n'.join(current_content).replace(f'{current_role}: ', '', 1)
+                'role': current_role,
+                'content': '\n'.join(current_content).strip()
             })
         
         return history

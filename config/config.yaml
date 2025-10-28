@@ -2,6 +2,7 @@
 # Esta configuración usa conexión real a OpenSearch y AWS
 
 # Configuración de OpenSearch
+# DESARROLLO (localhost con túnel SSH):
 opensearch:
   host: "localhost"
   port: 9201
@@ -13,6 +14,19 @@ opensearch:
   index_name: "rag-documents-darwin"
   scroll_timeout: "2m"
   mock_mode: false
+
+# PRODUCCIÓN EC2 (descomentar para usar en EC2):
+# opensearch:
+#   host: "vpc-rag-opensearch-clean-qodnaopeuroal2f6intbz7i5xy.eu-west-1.es.amazonaws.com"
+#   port: 443
+#   use_ssl: true
+#   verify_certs: true
+#   region: "eu-west-1"
+#   timeout: 30
+#   max_retries: 3
+#   index_name: "rag-documents-darwin"
+#   scroll_timeout: "2m"
+#   mock_mode: false
 
 # Configuración de AWS Bedrock
 bedrock:
@@ -67,6 +81,34 @@ cache:
   enabled: true
   max_size_mb: 100
   ttl_seconds: 3600
+
+# Configuración del agente
+agent:
+  max_tool_iterations: 10
+  enable_tool_execution: true
+
+# Configuración del LLM
+llm:
+  model_id: "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
+  max_tokens: 4000
+  temperature: 0.1
+  max_retries: 3
+  retry_delay_seconds: 1
+
+# Configuración de conversación
+conversation:
+  max_history_turns: 15  # Número máximo de turnos a mantener en historial
+  context_window_tokens: 180000  # 90% de 200K tokens para dejar margen
+  system_prompt_caching: true
+  tool_results_caching: true
+  enable_sliding_window: true  # Habilitar ventana deslizante
+  min_turns_to_keep: 3  # Mínimo de turnos a mantener siempre
+
+# Configuración de prompt caching
+prompt_caching:
+  enabled: true
+  cache_ttl_seconds: 3600
+  max_cache_size_mb: 500
 
 # Límites de rendimiento
 limits:

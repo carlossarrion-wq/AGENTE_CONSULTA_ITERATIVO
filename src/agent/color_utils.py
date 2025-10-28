@@ -31,6 +31,12 @@ class Colors:
     BRIGHT_CYAN = '\033[96m'
     BRIGHT_WHITE = '\033[97m'
     
+    # Colores personalizados RGB (según especificación del usuario)
+    DARK_BLUE = '\033[38;2;59;124;242m'      # #3B7CF2 - Para thinking del agente
+    ORANGE = '\033[38;2;221;94;40m'          # #DD5E28 - Para XML de herramientas
+    DARK_RED = '\033[38;2;229;4;6m'          # #E50406 - Para invocaciones de herramientas
+    DARK_GREEN = '\033[38;2;79;136;63m'      # #4F883F - Para respuestas del LLM
+    
     # Estilos
     BOLD = '\033[1m'
     DIM = '\033[2m'
@@ -129,6 +135,64 @@ def tool_result(text: str, bold: bool = False) -> str:
         Texto coloreado en rojo
     """
     return colorize(text, Colors.RED, bold)
+
+
+# Funciones personalizadas según especificación del usuario
+
+def thinking_text(text: str, bold: bool = False) -> str:
+    """
+    Colorea el thinking del agente en AZUL OSCURO (#3B7CF2)
+    
+    Args:
+        text: Texto del thinking
+        bold: Si debe aplicar negrita
+        
+    Returns:
+        Texto coloreado en azul oscuro
+    """
+    return colorize(text, Colors.DARK_BLUE, bold)
+
+
+def tool_xml(text: str, bold: bool = False) -> str:
+    """
+    Colorea los textos XML de herramientas en NARANJA (#DD5E28)
+    
+    Args:
+        text: Texto XML de herramientas
+        bold: Si debe aplicar negrita
+        
+    Returns:
+        Texto coloreado en naranja
+    """
+    return colorize(text, Colors.ORANGE, bold)
+
+
+def tool_invocation(text: str, bold: bool = False) -> str:
+    """
+    Colorea las invocaciones a herramientas en ROJO OSCURO (#E50406)
+    
+    Args:
+        text: Texto de invocación de herramienta
+        bold: Si debe aplicar negrita
+        
+    Returns:
+        Texto coloreado en rojo oscuro
+    """
+    return colorize(text, Colors.DARK_RED, bold)
+
+
+def llm_response_custom(text: str, bold: bool = False) -> str:
+    """
+    Colorea las respuestas del LLM en VERDE OSCURO (#356D34)
+    
+    Args:
+        text: Respuesta del LLM
+        bold: Si debe aplicar negrita
+        
+    Returns:
+        Texto coloreado en verde oscuro
+    """
+    return colorize(text, Colors.DARK_GREEN, bold)
 
 
 # Funciones adicionales para otros tipos de mensajes

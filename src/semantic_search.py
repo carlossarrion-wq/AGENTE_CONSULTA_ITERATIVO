@@ -137,8 +137,8 @@ class SemanticSearch:
             source = hit['_source']
             fragments.append({
                 "file_name": source['file_name'],
-                "relevance": hit['_score'],
-                "summary": source['content'],  # Contenido del chunk
+                "score": hit['_score'],  # Usar 'score' para consistencia con otras herramientas
+                "content": source['content'],  # Contenido del chunk
                 "chunk_id": source.get('chunk_id', 'unknown'),
                 "metadata": source.get('metadata', {})
             })
@@ -228,14 +228,14 @@ def print_pretty_results(result: Dict[str, Any]):
     
     for i, fragment in enumerate(result['fragments'], 1):
         print(f"\n{i}. 📄 {fragment['file_name']}")
-        print(f"   🎯 Relevancia: {fragment['relevance']:.3f}")
+        print(f"   🎯 Relevancia: {fragment['score']:.3f}")
         print(f"   🔗 Chunk ID: {fragment['chunk_id']}")
         
         # Mostrar resumen truncado
-        summary = fragment['summary']
-        if len(summary) > 200:
-            summary = summary[:200] + "..."
-        print(f"   📝 Contenido: {summary}")
+        content = fragment['content']
+        if len(content) > 200:
+            content = content[:200] + "..."
+        print(f"   📝 Contenido: {content}")
         
         # Mostrar metadatos si están disponibles
         metadata = fragment.get('metadata', {})

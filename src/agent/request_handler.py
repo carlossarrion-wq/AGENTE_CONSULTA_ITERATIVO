@@ -18,6 +18,7 @@ from enum import Enum
 
 from config_manager import ConfigManager
 from conversation_manager import ConversationManager
+from conversation_logger import ConversationLogger
 from llm_communication import LLMCommunication, LLMResponse
 from tool_executor import ToolExecutor, ConsolidatedResults
 from response_formatter import ResponseFormatter, FormattedResponse
@@ -85,6 +86,7 @@ class RequestHandler:
         # Inicializar componentes
         conversation_config = self.config.get_section('conversation')
         self.conversation_manager = ConversationManager(conversation_config)
+        self.conversation_logger = ConversationLogger(logs_dir="logs")
         self.llm_communication = LLMCommunication(config_path)
         self.tool_executor = ToolExecutor(config_path)
         self.response_formatter = ResponseFormatter()
@@ -99,48 +101,32 @@ class RequestHandler:
     def _format_tool_results_for_llm(self, tool_results: ConsolidatedResults) -> str:
         """
         Formatea los resultados de las herramientas para enviarlos al LLM.
-        IMPORTANTE: Este método envía TODA la información al LLM para que pueda analizarla,
-        pero esta información NO se muestra en pantalla (solo va al LLM internamente).
+        IMPORTANTE: Este método envía información resumida al LLM para que pueda analizarla.
         
         Args:
             tool_results: Resultados consolidados de las herramientas
             
         Returns:
-            String formateado con los resultados COMPLETOS para el LLM
+            String formateado con los resultados para el LLM
         """
-        message = "## Resultados de las Herramientas Ejecutadas\n\n"
-        message += "IMPORTANTE: Analiza estos resultados y proporciona una respuesta útil al usuario. "
-        message += "NO repitas toda esta información en tu respuesta, solo extrae lo relevante.\n\n"
+        # Mensaje claro indicando que debe analizar y responder
+        message = "[RESULTADOS DE TUS HERRAMIENTAS]\n\n"
+        message += "IMPORTANTE: Analiza estos resultados y presenta tu respuesta al usuario usando <present_answer>.\n"
+        message += "NO solicites más herramientas a menos que la información sea claramente insuficiente.\n\n"
         
         for result in tool_results.results:
             tool_name = result.tool_type.value
-            message += f"### Herramienta: {tool_name}\n"
-            message += f"- Estado: {'✅ Exitosa' if result.success else '❌ Fallida'}\n"
-            message += f"- Tiempo de ejecución: {result.execution_time_ms:.2f}ms\n"
             
             if result.success and result.data:
-                message += f"\n**Resultados:**\n"
-                
                 # Formatear según el tipo de herramienta
-                if tool_name == "semantic_search":
-                    message += self._format_search_results(result.data)
-                elif tool_name == "lexical_search":
-                    message += self._format_search_results(result.data)
-                elif tool_name == "regex_search":
+                if tool_name in ["semantic_search", "lexical_search", "regex_search"]:
                     message += self._format_search_results(result.data)
                 elif tool_name == "get_file_content":
                     message += self._format_file_content(result.data)
                 else:
-                    message += f"```\n{str(result.data)}\n```\n"
+                    message += f"{str(result.data)}\n\n"
             elif not result.success:
-                message += f"\n**Error:** {result.error}\n"
-            
-            message += "\n---\n\n"
-        
-        message += f"\n**Resumen:**\n"
-        message += f"- Total de herramientas ejecutadas: {tool_results.total_tools_executed}\n"
-        message += f"- Exitosas: {tool_results.successful_executions}\n"
-        message += f"- Fallidas: {tool_results.failed_executions}\n"
+                message += f"Error en {tool_name}: {result.error}\n\n"
         
         return message
     
@@ -189,13 +175,24 @@ class RequestHandler:
         return formatted
     
     def _format_file_content(self, results: Dict[str, Any]) -> str:
-        """Formatea contenido de archivo con TODA la información"""
+        """
+        Formatea contenido de archivo COMPLETO para el LLM.
+        IMPORTANTE: Este contenido se envía al LLM pero NO se muestra en pantalla.
+        Solo va a los logs para debugging.
+        """
         formatted = ""
         
         if 'content' in results:
-            formatted += f"Contenido del archivo:\n\n"
-            # INCLUIR CONTENIDO COMPLETO (sin truncar)
-            formatted += f"```\n{results['content']}\n```\n"
+            content = results['content']
+            file_name = results.get('file_name', 'archivo')
+            
+            # Información básica
+            formatted += f"Archivo: {file_name}\n"
+            formatted += f"Tamaño del contenido: {len(content)} caracteres\n\n"
+            
+            # ENVIAR CONTENIDO COMPLETO AL LLM (no se mostrará en pantalla)
+            formatted += f"Contenido completo del archivo:\n\n"
+            formatted += f"```\n{content}\n```\n"
             
             # Incluir metadata si existe
             if 'metadata' in results:
@@ -204,6 +201,80 @@ class RequestHandler:
                     formatted += f"- {key}: {value}\n"
         
         return formatted
+    
+    def _get_conversation_history_for_logging(self, session_id: str) -> List[Dict[str, str]]:
+        """
+        Obtiene el historial de conversación en formato estructurado para logging
+        
+        Args:
+            session_id: ID de la sesión
+            
+        Returns:
+            Lista de mensajes en formato [{"role": "user/assistant", "content": "..."}]
+        """
+        # Obtener el contexto conversacional como string
+        conversation_context = self.conversation_manager.get_conversation_context(session_id)
+        
+        if not conversation_context:
+            return []
+        
+        # Parsear el contexto para convertirlo en lista estructurada
+        history = []
+        lines = conversation_context.strip().split('\n\n')
+        
+        for line in lines:
+            line = line.strip()
+            if line.startswith('Human:'):
+                content = line.replace('Human:', '', 1).strip()
+                history.append({"role": "user", "content": content})
+            elif line.startswith('Assistant:'):
+                content = line.replace('Assistant:', '', 1).strip()
+                history.append({"role": "assistant", "content": content})
+        
+        return history
+    
+    def _filter_tool_results_text(self, content: str) -> str:
+        """
+        Filtra el texto de resultados de herramientas que el LLM puede copiar
+        
+        ESTRATEGIA: Si hay etiquetas XML de herramientas, truncar TODO después de la etiqueta de cierre
+        
+        Args:
+            content: Contenido de la respuesta del LLM
+            
+        Returns:
+            Contenido filtrado sin el texto de resultados
+        """
+        import re
+        
+        # PASO 1: Buscar etiquetas de cierre de herramientas XML
+        # Si encontramos una, truncamos TODO lo que viene después
+        tool_closing_tags = [
+            r'</semantic_search>',
+            r'</lexical_search>',
+            r'</regex_search>',
+            r'</get_file_content>'
+        ]
+        
+        # Buscar la ÚLTIMA etiqueta de cierre de herramienta en el contenido
+        last_tool_end = -1
+        for tag_pattern in tool_closing_tags:
+            matches = list(re.finditer(tag_pattern, content, re.IGNORECASE))
+            if matches:
+                # Obtener la posición del final de la última coincidencia
+                last_match_end = matches[-1].end()
+                if last_match_end > last_tool_end:
+                    last_tool_end = last_match_end
+        
+        # Si encontramos alguna etiqueta de cierre, truncar TODO después de ella
+        if last_tool_end > 0:
+            content = content[:last_tool_end].rstrip()
+        
+        # PASO 2: Adicionalmente, buscar y eliminar el patrón "H: [RESULTADOS..." si aparece
+        pattern = r'(?:H:\s*)?\[RESULTADOS\s+DE\s+HERRAMIENTAS[^\]]*\].*'
+        content = re.sub(pattern, '', content, flags=re.IGNORECASE | re.DOTALL)
+        
+        return content
     
     def process_request(self, session_id: str, user_input: str) -> RequestResult:
         """
@@ -246,7 +317,12 @@ class RequestHandler:
             
             self.logger.info(f"Procesando request para sesión {session_id}")
             
-            # 1. Enviar request inicial al LLM
+            # 1. CAPTURAR HISTORIAL ANTES de enviar al LLM
+            # IMPORTANTE: Debe hacerse ANTES porque send_request_with_conversation
+            # agrega el turno actual al historial
+            conversation_history_before_request = self._get_conversation_history_for_logging(session_id)
+            
+            # 2. Enviar request inicial al LLM
             self.logger.debug("Enviando request inicial al LLM...")
             llm_start = time.time()
             
@@ -264,10 +340,91 @@ class RequestHandler:
             
             self.logger.info(f"Respuesta LLM inicial recibida en {metrics.llm_time_ms:.2f}ms")
             
-            # Mostrar la respuesta inicial del LLM en pantalla (verde)
-            from color_utils import llm_response as color_llm_response
-            print(color_llm_response("\n🤖 Agente (respuesta inicial):"))
-            print(color_llm_response(current_llm_response.content))
+            # TRUNCAR INMEDIATAMENTE el contenido para evitar ejecutar herramientas de la parte descartada
+            # IMPORTANTE: Esto debe hacerse ANTES de parsear herramientas
+            current_llm_response.content = self._filter_tool_results_text(current_llm_response.content)
+            
+            # REGISTRAR interacción inicial con el LLM en logs/
+            try:
+                # Usar el historial capturado ANTES del request
+                # Este es el historial que realmente se envió al LLM
+                conversation_history = conversation_history_before_request
+                
+                # Obtener estadísticas de conversación para sliding window info
+                conv_stats = self.conversation_manager.get_conversation_stats(session_id)
+                
+                # Obtener configuración de sliding window
+                conversation_config = self.config.get_section('conversation')
+                enable_sliding_window = conversation_config.get('enable_sliding_window', True)
+                max_context_tokens = conversation_config.get('context_window_tokens', 180000)
+                
+                # Calcular información de sliding window
+                sliding_window_info = {
+                    "enabled": enable_sliding_window,
+                    "max_context_tokens": max_context_tokens,
+                    "total_turns_in_session": conv_stats.get('total_turns', 0),
+                    "total_tokens_in_session": conv_stats.get('total_tokens', 0),
+                    "turns_in_context": len(conversation_history),
+                    "turns_removed": max(0, (conv_stats.get('total_turns', 0) // 2) - len(conversation_history))
+                }
+                
+                self.conversation_logger.log_conversation_turn(
+                    session_id=session_id,
+                    user_input=user_input,
+                    llm_response=current_llm_response.content,
+                    metrics={
+                        "llm_time_ms": metrics.llm_time_ms,
+                        "tokens_input": metrics.tokens_input,
+                        "tokens_output": metrics.tokens_output,
+                        "cache_tokens_saved": metrics.cache_tokens_saved,
+                        "iteration": 0,
+                        "interaction_type": "initial_request"
+                    },
+                    request_metadata={
+                        "system_prompt": self.llm_communication.system_prompt,
+                        "conversation_history_sent_to_llm": conversation_history,
+                        "sliding_window_info": sliding_window_info,
+                        "model_id": self.llm_communication.model_id,
+                        "max_tokens": self.llm_communication.max_tokens,
+                        "temperature": self.llm_communication.temperature,
+                        "stop_reason": current_llm_response.stop_reason
+                    }
+                )
+            except Exception as log_error:
+                self.logger.warning(f"Error registrando interacción inicial: {log_error}")
+            
+            # Mostrar la respuesta inicial del LLM en pantalla
+            from color_utils import llm_response_custom, thinking_text, tool_xml
+            
+            # Parsear y colorear la respuesta según su contenido
+            # NOTA: Ya está truncado arriba, no necesitamos filtrar de nuevo
+            response_content = current_llm_response.content
+            
+            # Detectar y colorear secciones de thinking
+            if '<thinking>' in response_content:
+                parts = response_content.split('<thinking>')
+                colored_response = parts[0]
+                for part in parts[1:]:
+                    if '</thinking>' in part:
+                        thinking_content, rest = part.split('</thinking>', 1)
+                        colored_response += thinking_text(f"<thinking>{thinking_content}</thinking>")
+                        colored_response += rest
+                    else:
+                        colored_response += thinking_text(f"<thinking>{part}")
+                response_content = colored_response
+            
+            # Detectar y colorear bloques XML de herramientas
+            import re
+            tool_pattern = r'(<(?:semantic_search|lexical_search|regex_search|get_file_content)>.*?</(?:semantic_search|lexical_search|regex_search|get_file_content)>)'
+            response_content = re.sub(tool_pattern, lambda m: tool_xml(m.group(1)), response_content, flags=re.DOTALL)
+            
+            # Detectar y colorear bloques <present_answer> (respuesta final del LLM en verde)
+            # IMPORTANTE: Este bloque debe mostrarse en verde oscuro (#356D34)
+            present_answer_pattern = r'(<present_answer>.*?</present_answer>)'
+            response_content = re.sub(present_answer_pattern, lambda m: llm_response_custom(m.group(1)), response_content, flags=re.DOTALL)
+            
+            print(llm_response_custom("\n🤖 Agente (respuesta inicial):"))
+            print(response_content)  # Ya no necesita llm_response_custom aquí porque ya está coloreado
             print()
             
             # 2. CICLO ITERATIVO: Ejecutar herramientas mientras el LLM las solicite
@@ -288,7 +445,8 @@ class RequestHandler:
                 
                 self.logger.info(f"🔧 Iteración {iteration}/{max_iterations}: Encontradas {len(tool_calls)} herramientas a ejecutar")
                 
-                # Mostrar en pantalla las herramientas que se van a ejecutar (breve)
+                # Mostrar en pantalla las herramientas que se van a ejecutar (en rojo oscuro)
+                from color_utils import tool_invocation
                 for tool_call in tool_calls:
                     tool_name = tool_call.get('tool_type', 'unknown')
                     if hasattr(tool_name, 'value'):
@@ -296,10 +454,15 @@ class RequestHandler:
                     params = tool_call.get('params', {})
                     # Crear línea breve con parámetros principales
                     if params:
-                        params_str = ", ".join([f"{k}={str(v)[:50] if isinstance(v, str) else v}" for k, v in params.items()])
-                        print(info(f"  🔧 Ejecutando: {tool_name}({params_str})"))
+                        # Para file_path, mostrar el nombre completo sin truncar
+                        # Para otros parámetros, truncar a 100 caracteres
+                        params_str = ", ".join([
+                            f"{k}={str(v)}" if k == 'file_path' else f"{k}={str(v)[:100] if isinstance(v, str) else v}" 
+                            for k, v in params.items()
+                        ])
+                        print(tool_invocation(f"  🔧 Ejecutando: {tool_name}({params_str})"))
                     else:
-                        print(info(f"  🔧 Ejecutando: {tool_name}()"))
+                        print(tool_invocation(f"  🔧 Ejecutando: {tool_name}()"))
                 
                 # Ejecutar herramientas
                 tools_start = time.time()
@@ -334,7 +497,12 @@ class RequestHandler:
                         self.logger.info(f"Error: {result.error}")
                     # Log del contenido de resultados (solo al archivo)
                     if result.success and result.data:
-                        self.logger.debug(f"Datos: {str(result.data)[:500]}...")
+                        self.logger.debug(f"Datos completos: {str(result.data)[:1000]}...")
+                        # Log específico para semantic_search para debug de scores
+                        if tool_name == "semantic_search" and 'fragments' in result.data:
+                            self.logger.info(f"DEBUG SCORES - Total fragments: {len(result.data['fragments'])}")
+                            for idx, frag in enumerate(result.data['fragments'][:3]):  # Primeros 3
+                                self.logger.info(f"  Fragment {idx+1}: file={frag.get('file_name', 'N/A')}, score={frag.get('score', 'MISSING')}")
                 
                 self.logger.info(separator)
                 
@@ -342,6 +510,13 @@ class RequestHandler:
                 self.logger.info(f"🔄 Enviando resultados de iteración {iteration} al LLM...")
                 
                 tool_results_message = self._format_tool_results_for_llm(tool_results)
+                
+                # IMPORTANTE: Los resultados se envían al LLM pero NO se muestran en pantalla
+                # Solo mostramos un resumen breve al usuario
+                print(info(f"  ℹ️  Resultados enviados al LLM ({len(tool_results_message)} caracteres)"))
+                
+                # CAPTURAR HISTORIAL ANTES de enviar al LLM (para iteraciones)
+                conversation_history_before_iter = self._get_conversation_history_for_logging(session_id)
                 
                 llm_start_iter = time.time()
                 current_llm_response = self.llm_communication.send_request_with_conversation(
@@ -359,9 +534,81 @@ class RequestHandler:
                 
                 self.logger.info(f"✅ Respuesta LLM iteración {iteration} recibida en {llm_time_iter:.2f}ms")
                 
-                # Mostrar la respuesta del LLM de esta iteración en pantalla (verde)
-                print(color_llm_response(f"\n🤖 Agente (después de iteración {iteration}):"))
-                print(color_llm_response(current_llm_response.content))
+                # TRUNCAR INMEDIATAMENTE el contenido para evitar ejecutar herramientas de la parte descartada
+                # IMPORTANTE: Esto debe hacerse ANTES de parsear herramientas en la siguiente iteración
+                current_llm_response.content = self._filter_tool_results_text(current_llm_response.content)
+                
+                # REGISTRAR interacción iterativa con el LLM en logs/
+                try:
+                    # Usar el historial capturado ANTES del request iterativo
+                    conversation_history_iter = conversation_history_before_iter
+                    
+                    # Obtener estadísticas actualizadas de conversación para sliding window info
+                    conv_stats_iter = self.conversation_manager.get_conversation_stats(session_id)
+                    
+                    # Calcular información de sliding window para esta iteración
+                    sliding_window_info_iter = {
+                        "enabled": enable_sliding_window,
+                        "max_context_tokens": max_context_tokens,
+                        "total_turns_in_session": conv_stats_iter.get('total_turns', 0),
+                        "total_tokens_in_session": conv_stats_iter.get('total_tokens', 0),
+                        "turns_in_context": len(conversation_history_iter),
+                        "turns_removed": max(0, (conv_stats_iter.get('total_turns', 0) // 2) - len(conversation_history_iter))
+                    }
+                    
+                    self.conversation_logger.log_conversation_turn(
+                        session_id=session_id,
+                        user_input=tool_results_message,
+                        llm_response=current_llm_response.content,
+                        metrics={
+                            "llm_time_ms": llm_time_iter,
+                            "tokens_input": current_llm_response.usage.get('input_tokens', 0),
+                            "tokens_output": current_llm_response.usage.get('output_tokens', 0),
+                            "cache_tokens_saved": current_llm_response.cache_stats.get('tokens_saved', 0) if current_llm_response.cache_stats else 0,
+                            "iteration": iteration,
+                            "interaction_type": "tool_results_response",
+                            "tools_executed": tool_results.total_tools_executed,
+                            "tools_successful": tool_results.successful_executions,
+                            "tools_failed": tool_results.failed_executions
+                        },
+                        request_metadata={
+                            "system_prompt": self.llm_communication.system_prompt,
+                            "conversation_history_sent_to_llm": conversation_history_iter,
+                            "sliding_window_info": sliding_window_info_iter,
+                            "model_id": self.llm_communication.model_id,
+                            "max_tokens": self.llm_communication.max_tokens,
+                            "temperature": self.llm_communication.temperature,
+                            "stop_reason": current_llm_response.stop_reason
+                        }
+                    )
+                except Exception as log_error:
+                    self.logger.warning(f"Error registrando interacción iteración {iteration}: {log_error}")
+                
+                # Mostrar la respuesta del LLM de esta iteración en pantalla
+                # NOTA: Ya está truncado arriba, no necesitamos filtrar de nuevo
+                response_content_iter = current_llm_response.content
+                
+                # Detectar y colorear secciones de thinking
+                if '<thinking>' in response_content_iter:
+                    parts = response_content_iter.split('<thinking>')
+                    colored_response = parts[0]
+                    for part in parts[1:]:
+                        if '</thinking>' in part:
+                            thinking_content, rest = part.split('</thinking>', 1)
+                            colored_response += thinking_text(f"<thinking>{thinking_content}</thinking>")
+                            colored_response += rest
+                        else:
+                            colored_response += thinking_text(f"<thinking>{part}")
+                    response_content_iter = colored_response
+                
+                # Detectar y colorear bloques XML de herramientas
+                response_content_iter = re.sub(tool_pattern, lambda m: tool_xml(m.group(1)), response_content_iter, flags=re.DOTALL)
+                
+                # Detectar y colorear bloques <present_answer> en iteraciones
+                response_content_iter = re.sub(present_answer_pattern, lambda m: llm_response_custom(m.group(1)), response_content_iter, flags=re.DOTALL)
+                
+                print(llm_response_custom(f"\n🤖 Agente (después de iteración {iteration}):"))
+                print(response_content_iter)  # Ya está coloreado
                 print()
             
             # Verificar si se alcanzó el máximo de iteraciones
