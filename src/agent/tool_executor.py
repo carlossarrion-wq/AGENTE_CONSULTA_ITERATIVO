@@ -534,7 +534,7 @@ def main():
     También buscaré patrones de código relacionados:
     
     <regex_search>
-    <pattern>function.*auth.*\(</pattern>
+    <pattern>function.*auth.*\\(</pattern>
     <case_sensitive>false</case_sensitive>
     </regex_search>
     """
