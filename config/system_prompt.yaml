@@ -1,9 +1,0 @@
-# System Prompt Configuration for Darwin Knowledge Base Agent
-# Este archivo referencia el prompt completo almacenado en JSON
-
-# Ruta al archivo JSON que contiene el prompt completo
-prompt_file: "config/system_prompt_full.json"
-
-# Configuración adicional
-version: "1.0"
-encoding: "utf-8"

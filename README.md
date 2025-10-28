@@ -1,503 +1,767 @@
-# Agente de Consulta Darwin - Herramientas de Búsqueda
+# Agente IA de Consulta Darwin
 
-Sistema de herramientas de búsqueda para la base de conocimiento Darwin, implementado con OpenSearch y AWS Bedrock.
+Sistema de agente conversacional inteligente para consulta de la base de conocimiento Darwin con capacidades de búsqueda semántica, léxica, regex y gestión avanzada de conversaciones.
 
-## 🚀 Características
+## 📋 Tabla de Contenidos
 
-- **Búsqueda Semántica**: Búsqueda por significado conceptual usando embeddings vectoriales
-- **Búsqueda Léxica**: Búsqueda textual tradicional con BM25 y highlighting
-- **Búsqueda por Regex**: Patrones de expresiones regulares con contexto
-- **Obtención de Archivos**: Reconstrucción completa de archivos desde chunks indexados
+- [Descripción General](#descripción-general)
+- [Arquitectura del Sistema](#arquitectura-del-sistema)
+- [Componentes Principales](#componentes-principales)
+- [Herramientas de Búsqueda](#herramientas-de-búsqueda)
+- [Instalación y Configuración](#instalación-y-configuración)
+- [Uso del Sistema](#uso-del-sistema)
+- [Características Avanzadas](#características-avanzadas)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Documentación Técnica](#documentación-técnica)
 
-## 📋 Requisitos Previos
+---
 
-- Python 3.8+
-- AWS CLI configurado con credenciales válidas
-- Acceso a OpenSearch cluster Darwin
-- Acceso a AWS Bedrock (región eu-west-1)
+## 🎯 Descripción General
 
-## 🛠️ Instalación
+El **Agente IA de Consulta Darwin** es un sistema conversacional avanzado diseñado para facilitar la consulta y exploración de la base de conocimiento Darwin. Utiliza modelos de lenguaje de última generación (AWS Bedrock/Anthropic Claude) combinados con múltiples estrategias de búsqueda para proporcionar respuestas precisas y contextuales.
 
-### 1. Clonar o descargar el proyecto
+### Características Principales
 
-```bash
-git clone <repository-url>
-cd AGENTE_CONSULTA_ITERATIVO
+- **🤖 Agente Conversacional Inteligente**: Interfaz de chat natural con gestión de contexto conversacional
+- **🔍 Búsqueda Multimodal**: 4 herramientas especializadas de búsqueda (semántica, léxica, regex, contenido de archivos)
+- **💾 Prompt Caching Avanzado**: Optimización de tokens con reducción del 60-80% en conversaciones largas
+- **📊 Gestión de Contexto**: Sliding window inteligente para mantener conversaciones extensas
+- **🔄 Carga Dinámica de Documentos**: Integración con S3 para actualización automática de catálogo
+- **📝 Logging Estructurado**: Registro completo de interacciones LLM en formato JSON
+- **🌐 Conectividad AWS**: Soporte para túneles SSH y diagnósticos de red
+
+### Casos de Uso
+
+1. **Consultas Funcionales**: "¿Cómo funciona el módulo de autenticación en Darwin?"
+2. **Búsqueda de Código**: "Encuentra todas las funciones que validan tokens OAuth"
+3. **Análisis de Documentación**: "Resume el contenido del documento de especificaciones técnicas"
+4. **Exploración de Arquitectura**: "Explica la arquitectura de microservicios de Darwin"
+
+---
+
+## 🏗️ Arquitectura del Sistema
+
+### Diagrama de Arquitectura
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         AGENTE IA DARWIN                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                 │
+│  │Chat Interface│◄──►│Request Handler│◄──►│LLM Comm Module│                │
+│  │              │    │(Orchestrator) │    │               │                │
+│  │• Input Mgmt  │    │• Flow Control │    │• AWS Bedrock  │                │
+│  │• Display     │    │• State Mgmt   │    │• Prompt Cache │                │
+│  └──────────────┘    └──────────────┘    └──────────────┘                 │
+│         │                     │                     │                       │
+│         │            ┌──────────────┐              │                       │
+│         │            │Tool Execution│              │                       │
+│         │            │    Engine    │              │                       │
+│         │            │• XML Parser  │              │                       │
+│         │            │• Tool Router │              │                       │
+│         │            └──────────────┘              │                       │
+│         │                     │                     │                       │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                 │
+│  │Response      │    │Config Manager│    │Knowledge Base│                 │
+│  │Formatter     │    │              │    │  Interface   │                 │
+│  │• Formatting  │    │• YAML Config │    │• Semantic    │                 │
+│  │• Filtering   │    │• Validation  │    │• Lexical     │                 │
+│  └──────────────┘    └──────────────┘    │• Regex       │                 │
+│                                           │• File Content│                 │
+│                                           └──────────────┘                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │     INFRAESTRUCTURA AWS       │
+                    ├───────────────────────────────┤
+                    │• OpenSearch (VPC)             │
+                    │• Bedrock (Claude/Titan)       │
+                    │• S3 (Documentos/Resúmenes)    │
+                    └───────────────────────────────┘
 ```
 
-### 2. Crear entorno virtual
+### Flujo de Datos Principal
+
+```
+Usuario → Chat Interface → Request Handler → Prompt Cache Manager
+                                    ↓
+                          LLM Communication (AWS Bedrock)
+                                    ↓
+                          Respuesta con XML de herramientas
+                                    ↓
+                          Tool Execution Engine
+                                    ↓
+                    ┌───────────────────────────────────┐
+                    │   EJECUCIÓN DE HERRAMIENTAS       │
+                    ├───────────────────────────────────┤
+                    │ <semantic_search> → OpenSearch    │
+                    │ <lexical_search> → OpenSearch     │
+                    │ <regex_search> → OpenSearch       │
+                    │ <get_file_content> → OpenSearch   │
+                    └───────────────────────────────────┘
+                                    ↓
+                          Consolidación de Resultados
+                                    ↓
+                          Response Formatter
+                                    ↓
+                          Chat Interface → Usuario
+                                    ↓
+                          Actualizar Cache Conversacional
+```
+
+---
+
+## 🧩 Componentes Principales
+
+### 1. Chat Interface (`src/agent/chat_interface.py`)
+
+**Responsabilidad**: Interfaz de usuario para interacción conversacional
+
+**Funcionalidades**:
+- Captura de consultas del usuario
+- Visualización de respuestas formateadas con colores
+- Manejo de historial de conversación
+- Comandos especiales (/help, /history, /clear, /exit)
+
+### 2. Request Handler (`src/agent/request_handler.py`)
+
+**Responsabilidad**: Orquestador central del flujo de procesamiento
+
+**Funcionalidades**:
+- Coordinación del flujo de conversación
+- Gestión del estado de la sesión
+- Parsing de respuestas XML del LLM
+- Coordinación de ejecución de herramientas
+
+### 3. LLM Communication (`src/agent/llm_communication.py`)
+
+**Responsabilidad**: Comunicación con AWS Bedrock
+
+**Funcionalidades**:
+- Construcción de prompts con contexto
+- **Prompt Caching**: Optimización de tokens (reducción 60-80%)
+- Envío de requests a AWS Bedrock
+- Manejo de errores y reintentos
+- Logging completo de interacciones
+
+**Configuración**:
+```yaml
+llm:
+  model_id: "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
+  max_tokens: 4000
+  temperature: 0.1
+  max_retries: 3
+```
+
+### 4. Prompt Cache Manager (`src/agent/prompt_cache_manager.py`)
+
+**Responsabilidad**: Gestión inteligente del cache de prompts
+
+**Funcionalidades Clave**:
+- Cache de System Prompt (una sola vez por sesión)
+- Cache Conversacional con updates incrementales
+- Compresión inteligente de contexto
+- Sliding window para contexto relevante
+
+**Beneficios**:
+- **Reducción 60-80% en tokens** por request después del primer turno
+- **Ahorro significativo en costos** de API
+- **Latencia reducida** al no reenviar contexto completo
+- **Mejor experiencia de usuario**
+
+### 5. Conversation Manager (`src/agent/conversation_manager.py`)
+
+**Responsabilidad**: Gestión del historial conversacional
+
+**Funcionalidades**:
+- Historial estructurado de turnos usuario/asistente
+- Monitoreo de uso de tokens
+- Context Window Management (180K tokens)
+- Sliding window con mínimo de turnos a mantener
+
+**Configuración**:
+```yaml
+conversation:
+  max_history_turns: 15
+  context_window_tokens: 180000
+  system_prompt_caching: true
+  tool_results_caching: true
+  enable_sliding_window: true
+  min_turns_to_keep: 3
+```
+
+### 6. Tool Executor (`src/agent/tool_executor.py`)
+
+**Responsabilidad**: Ejecución de herramientas de búsqueda
+
+**Funcionalidades**:
+- Parsing de tags XML en respuestas LLM
+- Enrutamiento a herramientas específicas
+- Consolidación de resultados múltiples
+- Manejo de errores de herramientas
+- Logging detallado de ejecuciones
+
+### 7. S3 Summaries Loader (`src/agent/s3_summaries_loader.py`)
+
+**Responsabilidad**: Carga dinámica de resúmenes de documentos desde S3
+
+**Funcionalidades**:
+- Carga de catálogo desde S3 bucket
+- Simplificación de estructura JSON
+- Filtrado de campos innecesarios
+- Integración con system prompt dinámico
+
+**Configuración**:
+```yaml
+s3:
+  bucket_name: "rag-system-darwin-eu-west-1"
+  region_name: "eu-west-1"
+  prefix: "applications/darwin/"
+```
+
+### 8. Configuration Manager (`src/agent/config_manager.py`)
+
+**Responsabilidad**: Gestión centralizada de configuración
+
+**Funcionalidades**:
+- Carga de `config/config.yaml`
+- Validación de configuración
+- Acceso a configuración por secciones
+- Soporte para valores por defecto
+
+---
+
+## 🔍 Herramientas de Búsqueda
+
+### 1. Semantic Search
+
+**Descripción**: Búsqueda semántica usando embeddings vectoriales (Amazon Titan)
+
+**Uso en XML**:
+```xml
+<semantic_search>
+<query>módulos principales Darwin arquitectura componentes</query>
+<top_k>10</top_k>
+<min_score>0.5</min_score>
+<file_types>["docx", "pdf"]</file_types>
+</semantic_search>
+```
+
+**Parámetros**:
+- `query` (requerido): Descripción conceptual de lo que se busca
+- `top_k` (opcional): Número de resultados (default: 10)
+- `min_score` (opcional): Puntuación mínima 0.0-1.0 (default: 0.5)
+- `file_types` (opcional): Filtrar por tipos de archivo
+
+**Casos de Uso**:
+- Búsquedas conceptuales: "¿Cómo funciona la autenticación?"
+- Búsquedas por significado, no palabras exactas
+- Encontrar documentación relacionada
+
+### 2. Lexical Search
+
+**Descripción**: Búsqueda textual tradicional (BM25) con coincidencias exactas
+
+**Uso en XML**:
+```xml
+<lexical_search>
+<query>authenticateUser validateToken</query>
+<fields>["content", "file_name"]</fields>
+<operator>AND</operator>
+<top_k>20</top_k>
+<fuzzy>false</fuzzy>
+</lexical_search>
+```
+
+**Parámetros**:
+- `query` (requerido): Términos de búsqueda exactos
+- `fields` (opcional): Campos donde buscar (default: ["content"])
+- `operator` (opcional): "AND" | "OR" (default: "OR")
+- `top_k` (opcional): Número de resultados (default: 10)
+- `fuzzy` (opcional): Coincidencias aproximadas (default: false)
+
+**Casos de Uso**:
+- Búsqueda de palabras clave específicas
+- Búsqueda de nombres de funciones o variables
+- Búsqueda con operadores lógicos
+
+### 3. Regex Search
+
+**Descripción**: Búsqueda mediante expresiones regulares para patrones específicos
+
+**Uso en XML**:
+```xml
+<regex_search>
+<pattern>function\s+\w+\s*\([^)]*\)\s*\{</pattern>
+<file_types>["js", "ts"]</file_types>
+<case_sensitive>false</case_sensitive>
+<max_matches_per_file>50</max_matches_per_file>
+<context_lines>3</context_lines>
+</regex_search>
+```
+
+**Parámetros**:
+- `pattern` (requerido): Expresión regular
+- `file_types` (opcional): Filtrar por extensiones
+- `case_sensitive` (opcional): Sensible a mayúsculas (default: true)
+- `max_matches_per_file` (opcional): Máximo coincidencias (default: 50)
+- `context_lines` (opcional): Líneas de contexto (default: 2)
+
+**Casos de Uso**:
+- Búsqueda de patrones de código
+- Búsqueda de estructuras específicas
+- Análisis de código con regex
+
+### 4. Get File Content
+
+**Descripción**: Obtiene el contenido completo de un archivo reconstruyendo chunks
+
+**Uso en XML**:
+```xml
+<get_file_content>
+<file_path>FD-Darwin_Funcional0_v2.9.docx</file_path>
+<include_metadata>true</include_metadata>
+</get_file_content>
+```
+
+**Parámetros**:
+- `file_path` (requerido): Nombre del archivo
+- `include_metadata` (opcional): Incluir metadatos (default: false)
+
+**Características Avanzadas**:
+- Reconstrucción inteligente de chunks con manejo de overlaps
+- Detección de duplicados por hash
+- Uso de información de posición cuando está disponible
+- Scroll de OpenSearch para archivos grandes
+
+**Casos de Uso**:
+- Obtener documento completo para análisis
+- Leer especificaciones técnicas completas
+- Extraer contenido para procesamiento
+
+---
+
+## 🚀 Instalación y Configuración
+
+### Requisitos Previos
+
+- Python 3.9+
+- AWS CLI configurado con credenciales
+- Acceso a AWS Bedrock y OpenSearch
+- Conexión a VPC (o túnel SSH configurado)
+
+### Instalación
 
 ```bash
+# Clonar el repositorio
+git clone https://github.com/carlossarrion-wq/AGENTE_CONSULTA_ITERATIVO.git
+cd AGENTE_CONSULTA_ITERATIVO
+
+# Crear entorno virtual
 python3 -m venv venv
 source venv/bin/activate  # En Windows: venv\Scripts\activate
-```
 
-### 3. Instalar dependencias
-
-```bash
+# Instalar dependencias
 pip3 install -r requirements.txt
 ```
 
-### 4. Configurar AWS CLI
+### Configuración
 
+1. **Configurar AWS Credentials**:
 ```bash
 aws configure
-# Introducir:
-# - AWS Access Key ID
-# - AWS Secret Access Key  
-# - Default region: eu-west-1
-# - Default output format: json
+# Ingresar Access Key ID, Secret Access Key, Region (eu-west-1)
 ```
 
-### 5. Verificar configuración
-
-```bash
-aws sts get-caller-identity
-```
-
-## ⚙️ Configuración
-
-El archivo `config/config.yaml` contiene toda la configuración necesaria. Los valores por defecto están optimizados para el entorno Darwin.
-
-### Configuración Principal
-
+2. **Configurar `config/config.yaml`**:
 ```yaml
+# Configuración de OpenSearch
 opensearch:
-  host: "vpc-rag-opensearch-clean-qodnaopeuroal2f6intbz7i5xy.eu-west-1.es.amazonaws.com"
+  host: "localhost"  # o VPC endpoint
+  port: 9201
+  use_ssl: true
+  verify_certs: false
+  region: "eu-west-1"
   index_name: "rag-documents-darwin"
 
+# Configuración de AWS Bedrock
 bedrock:
   region_name: "eu-west-1"
   model_id: "amazon.titan-embed-image-v1"
 
-s3:
-  bucket_name: "rag-system-darwin-eu-west-1"
-  region_name: "eu-west-1"
+# Configuración del LLM
+llm:
+  model_id: "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
+  max_tokens: 4000
+  temperature: 0.1
+
+# Configuración de conversación
+conversation:
+  max_history_turns: 15
+  context_window_tokens: 180000
+  enable_sliding_window: true
 ```
 
-## 🔍 Herramientas de Búsqueda
+3. **Configurar System Prompt** (opcional):
+   - El system prompt se carga desde `config/system_prompt_darwin.md`
+   - Incluye marcador `{{DYNAMIC_SUMMARIES}}` para carga dinámica desde S3
 
-### 1. Búsqueda Semántica
+### Configuración de Túnel SSH (Desarrollo Local)
 
-Busca contenido por significado conceptual usando embeddings vectoriales.
-
-#### Uso Básico
+Si necesitas acceder a OpenSearch en VPC desde local:
 
 ```bash
-python3 src/semantic_search.py "¿Cómo configurar autenticación OAuth?"
+# Opción 1: Script automático
+./src/ssh_tunnel/setup_tunnel.sh
+
+# Opción 2: Script en background
+./src/ssh_tunnel/start_tunnel_background.sh
+
+# Opción 3: Usar aws_tunnel.py
+python3 src/ssh_tunnel/aws_tunnel.py --local-port 9201
 ```
 
-#### Opciones Avanzadas
+---
+
+## 💻 Uso del Sistema
+
+### Iniciar el Agente
 
 ```bash
-python3 src/semantic_search.py "machine learning algorithms" \
-  --top-k 20 \
-  --min-score 0.7 \
-  --file-types pdf docx \
-  --output json
+# Desde la raíz del proyecto
+python3 src/agent/main.py
 ```
 
-#### Parámetros
+### Comandos Disponibles
 
-- `query`: Consulta semántica (requerido)
-- `--top-k`: Número máximo de resultados (default: 10)
-- `--min-score`: Puntuación mínima de similitud 0.0-1.0 (default: 0.5)
-- `--file-types`: Filtrar por extensiones de archivo
-- `--output`: Formato de salida `json|pretty` (default: pretty)
+- `/help` - Muestra ayuda y comandos disponibles
+- `/history` - Muestra historial de conversación
+- `/clear` - Limpia el historial
+- `/exit` o `/quit` - Sale del agente
 
-#### Ejemplo de Salida
+### Ejemplos de Uso
 
+#### Ejemplo 1: Consulta Funcional
 ```
-🔍 Búsqueda semántica: '¿Cómo configurar autenticación OAuth?'
-📊 Resultados encontrados: 5
-================================================================================
+Usuario: ¿Cómo funciona el módulo de autenticación en Darwin?
 
-1. 📄 oauth_configuration_guide.pdf
-   🎯 Relevancia: 0.892
-   🔗 Chunk ID: chunk_001
-   📝 Contenido: Para configurar OAuth 2.0 en tu aplicación, primero debes...
-   ℹ️  Tipo: pdf, Tamaño: 245760 bytes
+Agente: Voy a buscar información sobre el módulo de autenticación...
+[Ejecuta semantic_search internamente]
+
+Agente: El módulo de autenticación en Darwin incluye:
+1. Autenticación mediante OAuth 2.0
+2. Validación de tokens JWT
+3. Gestión de sesiones
+...
 ```
 
-### 2. Búsqueda Léxica
+#### Ejemplo 2: Búsqueda de Código
+```
+Usuario: Encuentra todas las funciones que validan tokens
 
-Búsqueda textual tradicional usando BM25 con highlighting de coincidencias.
+Agente: Voy a buscar patrones de código relacionados con validación de tokens...
+[Ejecuta regex_search internamente]
 
-#### Uso Básico
+Agente: He encontrado 15 funciones que validan tokens:
+1. validateToken() en auth_middleware.js
+2. verifyJWT() en token_utils.js
+...
+```
+
+#### Ejemplo 3: Análisis de Documento
+```
+Usuario: Resume el contenido del documento FD-Darwin_Funcional0_v2.9.docx
+
+Agente: Voy a obtener el contenido del documento...
+[Ejecuta get_file_content internamente]
+
+Agente: El documento contiene la especificación funcional del módulo de Contratación:
+- Procesos de contratación asistida y no asistida
+- Lógica de búsqueda de direcciones
+...
+```
+
+---
+
+## ⚡ Características Avanzadas
+
+### 1. Prompt Caching
+
+El sistema implementa un sofisticado sistema de cache de prompts que reduce significativamente el uso de tokens:
+
+**Beneficios**:
+- **Reducción 60-80%** en tokens por request después del primer turno
+- **Ahorro económico** significativo en conversaciones largas
+- **Latencia reducida** al no reenviar contexto completo
+
+**Ejemplo de Ahorro**:
+```
+Conversación de 10 turnos SIN cache:
+- Total: ~105,000 tokens
+- Costo estimado: ~$210
+
+Conversación de 10 turnos CON cache:
+- Total: ~20,000 tokens
+- Costo estimado: ~$40
+
+AHORRO: 85,000 tokens (81% reducción)
+AHORRO ECONÓMICO: ~$170 por conversación
+```
+
+### 2. Sliding Window Conversacional
+
+Gestión inteligente de ventana de contexto para conversaciones extensas:
+
+- **Context Window**: 180K tokens (90% de 200K)
+- **Mínimo de turnos**: 3 turnos siempre mantenidos
+- **Eliminación inteligente**: Turnos más antiguos se eliminan primero
+- **Preservación de contexto**: Información crítica se mantiene
+
+### 3. Carga Dinámica de Documentos
+
+Los resúmenes de documentos se cargan dinámicamente desde S3:
+
+- **Bucket S3**: `rag-system-darwin-eu-west-1`
+- **Actualización automática**: Al iniciar el agente
+- **Simplificación**: Solo campos esenciales (file_name, summary, topics, key_terms)
+- **Integración**: Marcador `{{DYNAMIC_SUMMARIES}}` en system prompt
+
+### 4. Logging Estructurado
+
+Registro completo de todas las interacciones:
+
+- **Formato JSON**: Logs estructurados en `src/agent/logs/`
+- **Información completa**: Requests, responses, herramientas ejecutadas
+- **Timestamps**: Marca temporal de cada interacción
+- **Métricas**: Tokens usados, tiempo de ejecución
+
+**Estructura de Logs**:
+```json
+{
+  "timestamp": "2025-10-28T19:00:00Z",
+  "session_id": "uuid-session",
+  "request": {
+    "user_input": "¿Cómo funciona OAuth?",
+    "system_prompt_hash": "abc123",
+    "conversation_history_length": 5
+  },
+  "response": {
+    "content": "OAuth es un protocolo...",
+    "tools_used": ["semantic_search"],
+    "tokens": {
+      "input": 1500,
+      "output": 800,
+      "total": 2300
+    }
+  }
+}
+```
+
+### 5. Diagnósticos de Red
+
+Herramientas para diagnosticar conectividad:
 
 ```bash
-python3 src/lexical_search.py "configuración base de datos"
+# Diagnóstico completo
+python3 src/utils/network_diagnostics.py
+
+# Tests incluidos:
+# - Credenciales AWS
+# - Conectividad OpenSearch
+# - Acceso a Bedrock
+# - Resolución DNS
+# - Conexiones TCP
 ```
 
-#### Opciones Avanzadas
-
-```bash
-python3 src/lexical_search.py "API REST endpoint" \
-  --fields content file_name \
-  --operator AND \
-  --top-k 15 \
-  --fuzzy \
-  --output json
-```
-
-#### Parámetros
-
-- `query`: Términos de búsqueda exactos (requerido)
-- `--fields`: Campos donde buscar `content|file_name|metadata.summary`
-- `--operator`: Operador lógico `AND|OR` (default: OR)
-- `--top-k`: Número máximo de resultados (default: 10)
-- `--fuzzy`: Permitir coincidencias aproximadas
-- `--output`: Formato de salida `json|pretty`
-
-#### Ejemplo de Salida
-
-```
-🔍 Búsqueda léxica: 'configuración base de datos'
-🏷️  Términos: configuración, base, de, datos
-📊 Resultados encontrados: 8
-================================================================================
-
-1. 📄 database_setup.md
-   🎯 Score: 12.456
-   🔗 Chunk ID: chunk_042
-   🎯 Coincidencias:
-      • content: La <em>configuración</em> de la <em>base</em> <em>de</em> <em>datos</em> requiere...
-   📝 Vista previa: Para establecer la conexión con la base de datos...
-```
-
-### 3. Búsqueda por Regex
-
-Búsqueda mediante patrones de expresiones regulares con contexto.
-
-#### Uso Básico
-
-```bash
-python3 src/regex_search.py "function\s+\w+\s*\("
-```
-
-#### Opciones Avanzadas
-
-```bash
-python3 src/regex_search.py "class\s+(\w+)" \
-  --file-types py js ts \
-  --case-sensitive \
-  --max-matches-per-file 10 \
-  --context-lines 3 \
-  --output json
-```
-
-#### Parámetros
-
-- `pattern`: Expresión regular (requerido)
-- `--file-types`: Filtrar por extensiones de archivo
-- `--case-sensitive`: Búsqueda sensible a mayúsculas
-- `--max-matches-per-file`: Máximo coincidencias por archivo (default: 50)
-- `--context-lines`: Líneas de contexto antes/después (default: 2)
-- `--output`: Formato de salida `json|pretty`
-
-#### Patrones Útiles
-
-```bash
-# Buscar funciones JavaScript/Python
-python3 src/regex_search.py "function\s+\w+|def\s+\w+"
-
-# Buscar URLs
-python3 src/regex_search.py "https?://[^\s]+"
-
-# Buscar emails
-python3 src/regex_search.py "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-
-# Buscar números de teléfono
-python3 src/regex_search.py "\+?[0-9]{1,4}[-.\s]?[0-9]{3,4}[-.\s]?[0-9]{3,4}"
-```
-
-#### Ejemplo de Salida
-
-```
-🔍 Búsqueda regex: 'function\s+\w+\s*\('
-📊 Total coincidencias: 15 en 6 archivos
-================================================================================
-
-1. 📄 utils.js
-   🔗 Chunk ID: chunk_089
-   🎯 Coincidencias: 3
-
-   Match 1 (línea 42):
-   🎯 Coincidencia: 'function validateInput('
-   📝 Contexto anterior:
-      // Validación de entrada de usuario
-      
-   ➤  function validateInput(data) {
-   📝 Contexto posterior:
-      if (!data || typeof data !== 'object') {
-        return false;
-```
-
-### 4. Obtención de Contenido de Archivos
-
-Reconstruye archivos completos desde chunks indexados, manejando overlaps automáticamente.
-
-#### Uso Básico
-
-```bash
-python3 src/get_file_content.py "manual_usuario.pdf"
-```
-
-#### Opciones Avanzadas
-
-```bash
-python3 src/get_file_content.py "api_documentation.md" \
-  --include-metadata \
-  --save-to "local_copy.md" \
-  --output content-only
-```
-
-#### Parámetros
-
-- `file_path`: Nombre del archivo (requerido)
-- `--include-metadata`: Incluir metadatos adicionales
-- `--save-to`: Guardar contenido en archivo local
-- `--output`: Formato `json|pretty|content-only`
-
-#### Ejemplo de Salida
-
-```
-📄 Archivo: manual_usuario.pdf
-📊 Estadísticas:
-   • Total chunks: 24
-   • Longitud contenido: 45,678 caracteres
-   • Manejo de overlaps: applied
-   • Tipo: pdf
-   • Tamaño original: 2,456,789 bytes
-   • Rango chunks: 1 - 24
-
-================================================================================
-📝 CONTENIDO:
-================================================================================
-# Manual de Usuario - Sistema Darwin
-
-## Introducción
-
-Este manual proporciona una guía completa para el uso del sistema...
-
-... [Contenido truncado. Total: 45,678 caracteres]
-💡 Usa --output content-only para ver el contenido completo
-💡 Usa --save-to archivo.txt para guardar en archivo
-```
-
-## 📊 Ejemplos de Uso Práctico
-
-### Flujo de Trabajo Típico
-
-1. **Búsqueda exploratoria** (semántica):
-```bash
-python3 src/semantic_search.py "configuración de seguridad en aplicaciones web"
-```
-
-2. **Búsqueda específica** (léxica):
-```bash
-python3 src/lexical_search.py "HTTPS SSL certificate" --operator AND
-```
-
-3. **Búsqueda de patrones** (regex):
-```bash
-python3 src/regex_search.py "password.*=.*['\"].*['\"]" --file-types js py
-```
-
-4. **Obtener archivo completo**:
-```bash
-python3 src/get_file_content.py "security_best_practices.md" --save-to security.md
-```
-
-### Casos de Uso Específicos
-
-#### Análisis de Código
-```bash
-# Buscar todas las funciones
-python3 src/regex_search.py "def\s+\w+|function\s+\w+" --file-types py js
-
-# Buscar imports/includes
-python3 src/regex_search.py "import\s+.*|#include\s+.*|require\s*\(" --context-lines 1
-```
-
-#### Documentación Técnica
-```bash
-# Buscar conceptos relacionados
-python3 src/semantic_search.py "microservicios arquitectura contenedores" --top-k 20
-
-# Buscar términos específicos
-python3 src/lexical_search.py "Docker Kubernetes deployment" --fuzzy
-```
-
-#### Configuración y Setup
-```bash
-# Buscar archivos de configuración
-python3 src/regex_search.py "\.env|config\..*|settings\..*" --file-types env yaml json
-
-# Buscar procedimientos de instalación
-python3 src/semantic_search.py "instalación configuración inicial setup"
-```
-
-## 🔧 Configuración Avanzada
-
-### Variables de Entorno
-
-Puedes sobrescribir la configuración usando variables de entorno:
-
-```bash
-export OPENSEARCH_HOST="tu-cluster.es.amazonaws.com"
-export BEDROCK_REGION="eu-west-1"
-export LOG_LEVEL="DEBUG"
-```
-
-### Configuración de Cache
-
-El sistema incluye cache automático para mejorar el rendimiento:
-
-```yaml
-cache:
-  enabled: true
-  max_size_mb: 100
-  ttl_seconds: 3600
-```
-
-### Configuración de Logging
-
-```yaml
-logging:
-  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  file: "logs/search_tools.log"
-```
-
-## 🚨 Solución de Problemas
-
-### Error de Autenticación AWS
-
-```bash
-# Verificar credenciales
-aws sts get-caller-identity
-
-# Reconfigurar si es necesario
-aws configure
-```
-
-### Error de Conexión a OpenSearch
-
-```bash
-# Verificar conectividad
-curl -I https://vpc-rag-opensearch-clean-qodnaopeuroal2f6intbz7i5xy.eu-west-1.es.amazonaws.com
-
-# Verificar permisos IAM
-aws iam get-user
-```
-
-### Error de Bedrock
-
-```bash
-# Verificar acceso a Bedrock
-aws bedrock list-foundation-models --region eu-west-1
-```
-
-### Problemas de Rendimiento
-
-1. **Ajustar límites de tiempo**:
-```yaml
-limits:
-  max_search_time_seconds: 60  # Aumentar timeout
-```
-
-2. **Optimizar cache**:
-```yaml
-cache:
-  max_size_mb: 200  # Aumentar tamaño de cache
-```
-
-3. **Reducir resultados**:
-```bash
-python3 src/semantic_search.py "query" --top-k 5 --min-score 0.8
-```
-
-### Logs de Debug
-
-Para obtener información detallada:
-
-```bash
-# Activar logging debug
-export LOG_LEVEL=DEBUG
-
-# Ejecutar herramienta
-python3 src/semantic_search.py "test query"
-
-# Ver logs
-tail -f logs/search_tools.log
-```
+---
 
 ## 📁 Estructura del Proyecto
 
 ```
 AGENTE_CONSULTA_ITERATIVO/
 ├── config/
-│   └── config.yaml              # Configuración principal
+│   ├── config.yaml                    # Configuración principal
+│   └── system_prompt_darwin.md        # System prompt con marcador dinámico
+│
 ├── src/
-│   ├── common.py               # Utilidades compartidas
-│   ├── semantic_search.py      # Búsqueda semántica
-│   ├── lexical_search.py       # Búsqueda léxica
-│   ├── regex_search.py         # Búsqueda regex
-│   └── get_file_content.py     # Obtención de archivos
-├── logs/                       # Logs del sistema (auto-creado)
-├── requirements.txt            # Dependencias Python
-└── README.md                   # Esta documentación
+│   ├── agent/                         # Módulos del agente IA
+│   │   ├── __init__.py
+│   │   ├── main.py                    # Punto de entrada
+│   │   ├── chat_interface.py          # Interfaz de chat
+│   │   ├── request_handler.py         # Orquestador principal
+│   │   ├── llm_communication.py       # Comunicación con Bedrock
+│   │   ├── prompt_cache_manager.py    # Gestión de cache de prompts
+│   │   ├── conversation_manager.py    # Gestión de historial
+│   │   ├── conversation_logger.py     # Logging de conversaciones
+│   │   ├── tool_executor.py           # Ejecución de herramientas
+│   │   ├── config_manager.py          # Gestión de configuración
+│   │   ├── response_formatter.py      # Formateo de respuestas
+│   │   ├── s3_summaries_loader.py     # Carga dinámica desde S3
+│   │   ├── color_utils.py             # Utilidades de colores
+│   │   └── logs/                      # Logs de conversaciones
+│   │
+│   ├── tools/                         # Herramientas de búsqueda
+│   │   ├── __init__.py
+│   │   ├── semantic_search.py         # Búsqueda semántica
+│   │   ├── lexical_search.py          # Búsqueda léxica
+│   │   ├── regex_search.py            # Búsqueda por regex
+│   │   └── get_file_content.py        # Obtención de archivos
+│   │
+│   ├── common/                        # Utilidades compartidas
+│   │   ├── __init__.py
+│   │   └── common.py                  # Config, OpenSearch, Bedrock clients
+│   │
+│   ├── utils/                         # Utilidades del sistema
+│   │   ├── __init__.py
+│   │   ├── network_diagnostics.py     # Diagnósticos de red
+│   │   ├── update_system_prompt.py    # Actualización de prompt
+│   │   └── process_summaries.py       # Procesamiento de resúmenes
+│   │
+│   └── ssh_tunnel/                    # Herramientas de tunelización
+│       ├── __init__.py
+│       ├── aws_tunnel.py              # Cliente de túnel SSH
+│       ├── setup_tunnel.sh            # Script de configuración
+│       ├── start_tunnel_background.sh # Túnel en background
+│       └── start_tunnel_direct.sh     # Túnel directo
+│
+├── docs/                              # Documentación técnica
+│   ├── README.md                      # Este archivo
+│   ├── README_AGENTE_IA_DESIGN.md     # Diseño arquitectónico
+│   ├── DEFINICION_4_HERRAMIENTAS_AGENTE_CONSULTA.md
+│   ├── DYNAMIC_SUMMARIES_IMPLEMENTATION.md
+│   ├── SLIDING_WINDOW_IMPLEMENTATION.md
+│   ├── LOGS_JSON_STRUCTURE.md
+│   └── [otros documentos técnicos]
+│
+├── requirements.txt                   # Dependencias Python
+├── .gitignore                        # Archivos ignorados por Git
+└── README.md                         # Este archivo
 ```
 
-## 🔒 Seguridad
+---
 
-- Las credenciales AWS se obtienen del AWS CLI configurado
-- No se almacenan credenciales en el código
-- Todas las conexiones usan HTTPS/TLS
-- Los logs no incluyen información sensible
+## 📚 Documentación Técnica
 
-## 🚀 Rendimiento
+### Documentos Disponibles
 
-### Optimizaciones Implementadas
+1. **[README_AGENTE_IA_DESIGN.md](docs/README_AGENTE_IA_DESIGN.md)**: Diseño arquitectónico completo del agente
+2. **[DEFINICION_4_HERRAMIENTAS_AGENTE_CONSULTA.md](docs/DEFINICION_4_HERRAMIENTAS_AGENTE_CONSULTA.md)**: Especificación técnica de las 4 herramientas
+3. **[DYNAMIC_SUMMARIES_IMPLEMENTATION.md](docs/DYNAMIC_SUMMARIES_IMPLEMENTATION.md)**: Implementación de carga dinámica desde S3
+4. **[SLIDING_WINDOW_IMPLEMENTATION.md](docs/SLIDING_WINDOW_IMPLEMENTATION.md)**: Implementación de sliding window conversacional
+5. **[LOGS_JSON_STRUCTURE.md](docs/LOGS_JSON_STRUCTURE.md)**: Estructura de logs JSON
+6. **[SOLUCION_CONECTIVIDAD_AWS.md](docs/SOLUCION_CONECTIVIDAD_AWS.md)**: Soluciones de conectividad AWS
 
-- **Cache inteligente**: Resultados frecuentes se cachean automáticamente
-- **Scroll API**: Para archivos grandes con muchos chunks
-- **Batch processing**: Procesamiento eficiente de múltiples chunks
-- **Timeouts configurables**: Evita consultas que cuelguen
+### Tecnologías Utilizadas
 
-### Métricas de Rendimiento
+- **Python 3.9+**: Lenguaje principal
+- **AWS Bedrock**: Servicio de LLM (Claude Haiku)
+- **AWS S3**: Almacenamiento de documentos y resúmenes
+- **OpenSearch**: Motor de búsqueda y vectorial
+- **Amazon Titan**: Modelo de embeddings (1024 dimensiones)
+- **boto3**: SDK de AWS para Python
+- **opensearchpy**: Cliente de OpenSearch
+- **PyYAML**: Parsing de configuración
 
-Las herramientas registran automáticamente:
-- Tiempo de respuesta
-- Número de resultados
-- Uso de cache
-- Errores y reintentos
+### Infraestructura AWS
+
+- **Región**: eu-west-1 (Irlanda)
+- **OpenSearch**: VPC endpoint en red privada
+- **Bedrock**: Modelos Claude Haiku y Titan Embeddings
+- **S3 Bucket**: rag-system-darwin-eu-west-1
+- **Índice OpenSearch**: rag-documents-darwin
+
+---
+
+## 🔧 Mantenimiento y Desarrollo
+
+### Actualizar System Prompt
+
+```bash
+# Si necesitas actualizar el system prompt con nuevos documentos
+python3 src/utils/update_system_prompt.py
+```
+
+### Procesar Nuevos Resúmenes
+
+```bash
+# Procesar archivos JSON de resúmenes
+python3 src/utils/process_summaries.py
+```
+
+### Ejecutar Tests
+
+```bash
+# Tests de componentes core
+python3 src/agent/test_core_components.py
+
+# Tests de colores
+python3 src/agent/test_colors.py
+
+# Tests de logging
+python3 src/agent/test_llm_logging.py
+```
+
+### Diagnósticos
+
+```bash
+# Diagnóstico completo de conectividad
+python3 src/utils/network_diagnostics.py
+
+# Test de búsqueda léxica
+python3 test_lexical_from_agent.py
+```
+
+---
 
 ## 🤝 Contribución
 
 Para contribuir al proyecto:
 
-1. Crear rama feature: `git checkout -b feature/nueva-funcionalidad`
-2. Realizar cambios y tests
-3. Commit: `git commit -m "Descripción del cambio"`
-4. Push: `git push origin feature/nueva-funcionalidad`
-5. Crear Pull Request
-
-## 📄 Licencia
-
-Este proyecto es parte del sistema Darwin y está sujeto a las políticas internas de la organización.
-
-## 📞 Soporte
-
-Para soporte técnico:
-- Revisar logs en `logs/search_tools.log`
-- Verificar configuración AWS
-- Consultar documentación de OpenSearch
-- Contactar al equipo de desarrollo Darwin
+1. Fork el repositorio
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
 ---
 
-**Versión**: 1.0.0  
+## 📝 Licencia
+
+Este proyecto es propiedad de [Tu Organización]. Todos los derechos reservados.
+
+---
+
+## 👥 Autores
+
+- **Equipo Darwin** - Desarrollo y mantenimiento
+
+---
+
+## 📞 Soporte
+
+Para soporte técnico o preguntas:
+- Consulta la documentación en `docs/`
+- Revisa los logs en `src/agent/logs/`
+- Ejecuta diagnósticos con `network_diagnostics.py`
+
+---
+
+## 🔄 Changelog
+
+### Versión 1.0.0 (Octubre 2025)
+- ✅ Implementación completa del agente conversacional
+- ✅ 4 herramientas de búsqueda integradas
+- ✅ Prompt caching con optimización de tokens
+- ✅ Sliding window conversacional
+- ✅ Carga dinámica de documentos desde S3
+- ✅ Logging estructurado en JSON
+- ✅ Diagnósticos de red y conectividad
+- ✅ Soporte para túneles SSH
+
+---
+
 **Última actualización**: Octubre 2025  
-**Compatibilidad**: Python 3.8+, AWS SDK v2
+**Versión**: 1.0.0  
+**Estado**: Producción

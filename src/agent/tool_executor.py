@@ -23,10 +23,10 @@ from pathlib import Path
 # Agregar src al path para importar módulos
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from semantic_search import SemanticSearch
-from lexical_search import LexicalSearch
-from regex_search import RegexSearch
-from get_file_content import GetFileContent
+from tools.semantic_search import SemanticSearch
+from tools.lexical_search import LexicalSearch
+from tools.regex_search import RegexSearch
+from tools.get_file_content import GetFileContent
 from color_utils import tool_result as color_tool_result
 
 

@@ -98,19 +98,25 @@ class RequestHandler:
         self.logger.info("RequestHandler inicializado correctamente")
         self.logger.info("System prompt se cargará desde LLMCommunication (config/system_prompt.yaml)")
     
-    def _format_tool_results_for_llm(self, tool_results: ConsolidatedResults) -> str:
+    def _format_tool_results_for_llm(self, tool_results: ConsolidatedResults, original_question: str = None) -> str:
         """
         Formatea los resultados de las herramientas para enviarlos al LLM.
         IMPORTANTE: Este método envía información resumida al LLM para que pueda analizarla.
         
         Args:
             tool_results: Resultados consolidados de las herramientas
+            original_question: Pregunta original del usuario (para mantener contexto)
             
         Returns:
             String formateado con los resultados para el LLM
         """
         # Mensaje claro indicando que debe analizar y responder
         message = "[RESULTADOS DE TUS HERRAMIENTAS]\n\n"
+        
+        # IMPORTANTE: Incluir la pregunta original para mantener el contexto
+        if original_question:
+            message += f"RECORDATORIO - Pregunta original del usuario: \"{original_question}\"\n\n"
+        
         message += "IMPORTANTE: Analiza estos resultados y presenta tu respuesta al usuario usando <present_answer>.\n"
         message += "NO solicites más herramientas a menos que la información sea claramente insuficiente.\n\n"
         
@@ -317,18 +323,51 @@ class RequestHandler:
             
             self.logger.info(f"Procesando request para sesión {session_id}")
             
-            # 1. CAPTURAR HISTORIAL ANTES de enviar al LLM
-            # IMPORTANTE: Debe hacerse ANTES porque send_request_with_conversation
-            # agrega el turno actual al historial
+            # 1. Agregar el turno del usuario al historial manualmente
+            # (para poder capturar el historial completo incluyendo este turno)
+            self.conversation_manager.add_user_turn(
+                session_id=session_id,
+                message=user_input,
+                tokens=len(user_input.split())
+            )
+            
+            # 2. CAPTURAR HISTORIAL DESPUÉS de agregar el turno del usuario
+            # pero ANTES de enviar al LLM (que quitará el último turno de usuario)
             conversation_history_before_request = self._get_conversation_history_for_logging(session_id)
             
-            # 2. Enviar request inicial al LLM
+            # 3. Enviar request inicial al LLM
+            # NOTA: send_request_with_conversation normalmente agrega el turno del usuario,
+            # pero como ya lo agregamos arriba, necesitamos evitar que lo agregue de nuevo
             self.logger.debug("Enviando request inicial al LLM...")
             llm_start = time.time()
             
-            current_llm_response = self.llm_communication.send_request_with_conversation(
+            # Obtener el historial en formato Bedrock (sin el último turno de usuario)
+            conversation_context = self.conversation_manager.get_conversation_context(session_id)
+            conversation_history_for_bedrock = self.llm_communication._build_conversation_history(conversation_context)
+            if conversation_history_for_bedrock and conversation_history_for_bedrock[-1]['role'] == 'user':
+                conversation_history_for_bedrock = conversation_history_for_bedrock[:-1]
+            
+            # Crear el request manualmente
+            from llm_communication import LLMRequest
+            llm_request = LLMRequest(
                 session_id=session_id,
-                user_input=user_input
+                system_prompt=self.llm_communication.system_prompt,
+                user_input=user_input,
+                conversation_history=conversation_history_for_bedrock,
+                max_tokens=self.llm_communication.max_tokens,
+                temperature=self.llm_communication.temperature,
+                use_cache=True
+            )
+            
+            # Enviar el request
+            current_llm_response = self.llm_communication.send_request(llm_request)
+            
+            # Agregar la respuesta del asistente al historial
+            self.conversation_manager.add_assistant_turn(
+                session_id=session_id,
+                response=current_llm_response.content,
+                tools_used=[],
+                tokens=current_llm_response.usage.get('output_tokens', 0)
             )
             
             metrics.llm_time_ms = (time.time() - llm_start) * 1000
@@ -350,6 +389,7 @@ class RequestHandler:
                 # Este es el historial que realmente se envió al LLM
                 conversation_history = conversation_history_before_request
                 
+            
                 # Obtener estadísticas de conversación para sliding window info
                 conv_stats = self.conversation_manager.get_conversation_stats(session_id)
                 
@@ -509,7 +549,8 @@ class RequestHandler:
                 # Enviar resultados al LLM para siguiente iteración
                 self.logger.info(f"🔄 Enviando resultados de iteración {iteration} al LLM...")
                 
-                tool_results_message = self._format_tool_results_for_llm(tool_results)
+                # IMPORTANTE: Pasar la pregunta original del usuario para mantener el contexto
+                tool_results_message = self._format_tool_results_for_llm(tool_results, original_question=user_input)
                 
                 # IMPORTANTE: Los resultados se envían al LLM pero NO se muestran en pantalla
                 # Solo mostramos un resumen breve al usuario

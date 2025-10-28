@@ -23,6 +23,7 @@ from pathlib import Path
 from config_manager import ConfigManager
 from prompt_cache_manager import PromptCacheManager
 from conversation_manager import ConversationManager
+from s3_summaries_loader import S3SummariesLoader
 from color_utils import (
     llm_request, llm_response, info, error, success, header, dim_text
 )
@@ -64,18 +65,24 @@ class LLMResponse:
 class LLMCommunication:
     """Gestor de comunicación con AWS Bedrock"""
     
-    def __init__(self, config_path: str = "config/config.yaml", system_prompt_file: str = "config/system_prompt_darwin.txt"):
+    def __init__(self, config_path: str = "config/config.yaml"):
         """
         Inicializa el módulo de comunicación LLM
         
         Args:
             config_path: Ruta al archivo de configuración principal
-            system_prompt_file: Ruta al archivo de texto con el prompt de sistema
         """
         self.config = ConfigManager(config_path)
         self.logger = logging.getLogger(__name__)
         
-        # Cargar system prompt desde archivo de texto
+        # Inicializar S3 Summaries Loader
+        self.s3_loader = S3SummariesLoader()
+        
+        # Leer ruta del system prompt desde configuración
+        agent_config = self.config.get_section('agent')
+        system_prompt_file = agent_config.get('system_prompt_file', 'config/system_prompt_darwin.md')
+        
+        # Cargar system prompt desde archivo de texto (con resúmenes dinámicos desde S3)
         self.system_prompt = self._load_system_prompt(system_prompt_file)
         
         # Inicializar managers
@@ -109,12 +116,13 @@ class LLMCommunication:
     def _load_system_prompt(self, system_prompt_file: str) -> str:
         """
         Carga el prompt de sistema directamente desde un archivo de texto
+        y popula dinámicamente la sección de documentos disponibles desde S3
         
         Args:
             system_prompt_file: Ruta al archivo de texto con el prompt de sistema
             
         Returns:
-            String con el prompt de sistema completo
+            String con el prompt de sistema completo con resúmenes dinámicos
         """
         try:
             prompt_path = Path(system_prompt_file)
@@ -124,7 +132,18 @@ class LLMCommunication:
             
             # Leer el contenido del archivo de texto directamente
             with open(prompt_path, 'r', encoding='utf-8') as f:
-                prompt = f.read()
+                prompt_template = f.read()
+            
+            # Buscar el marcador {{DYNAMIC_SUMMARIES}} y reemplazarlo con los resúmenes de S3
+            if "{{DYNAMIC_SUMMARIES}}" in prompt_template:
+                self.logger.info("📥 Cargando resúmenes dinámicamente desde S3...")
+                summaries_section = self.s3_loader.get_summaries_section()
+                prompt = prompt_template.replace("{{DYNAMIC_SUMMARIES}}", summaries_section)
+                self.logger.info(f"✅ Resúmenes cargados y populados en el system prompt")
+            else:
+                # Si no hay marcador, usar el prompt tal cual
+                prompt = prompt_template
+                self.logger.warning("⚠️  No se encontró el marcador {{DYNAMIC_SUMMARIES}} en el system prompt")
             
             self.logger.info(f"✅ System prompt cargado desde archivo: {system_prompt_file}")
             self.logger.info(f"   Tamaño: {len(prompt)} caracteres")

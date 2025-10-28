@@ -15,7 +15,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
-from common import (
+from common.common import (
     Config, OpenSearchClient, Logger,
     handle_search_error, log_search_metrics, validate_parameters,
     get_cache, ValidationError, find_overlap_length, calculate_text_similarity,

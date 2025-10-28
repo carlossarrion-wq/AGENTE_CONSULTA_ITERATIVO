@@ -54,7 +54,10 @@ def process_json_file(file_path):
         }
 
 def main():
-    summaries_dir = Path('Summaries')
+    # Obtener la ruta raíz del proyecto (2 niveles arriba desde este script)
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent.parent
+    summaries_dir = project_root / 'Summaries'
     
     if not summaries_dir.exists():
         print(f"Error: Directory {summaries_dir} does not exist")
@@ -81,8 +84,8 @@ def main():
         'files': files_info
     }
     
-    # Guardar el resultado
-    output_file = 'summaries_catalog.json'
+    # Guardar el resultado en la raíz del proyecto
+    output_file = project_root / 'summaries_catalog.json'
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
     

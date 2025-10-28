@@ -10,7 +10,7 @@ import sys
 import re
 from typing import Dict, List, Any, Optional
 
-from common import (
+from common.common import (
     Config, OpenSearchClient, Logger,
     handle_search_error, log_search_metrics, validate_parameters,
     get_cache, ValidationError
