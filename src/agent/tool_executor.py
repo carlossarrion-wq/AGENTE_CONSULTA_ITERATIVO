@@ -27,7 +27,7 @@ from tools.tool_semantic_search import SemanticSearch
 from tools.tool_lexical_search import LexicalSearch
 from tools.tool_regex_search import RegexSearch
 from tools.tool_get_file_content import GetFileContent
-from color_utils import tool_result as color_tool_result
+from agent.color_utils import tool_result as color_tool_result
 
 
 class ToolType(Enum):

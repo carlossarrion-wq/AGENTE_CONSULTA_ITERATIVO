@@ -211,9 +211,191 @@ Siempre proporciona respuestas claras, precisas y bien estructuradas."""
         
         return prompt, cache_stats
     
+    def send_request_streaming(self, llm_request: LLMRequest, 
+                              token_callback: callable) -> LLMResponse:
+        """
+        Envía un request a AWS Bedrock con streaming habilitado
+        
+        Args:
+            llm_request: Request al LLM
+            token_callback: Función callback que recibe cada token generado
+            
+        Returns:
+            LLMResponse con respuesta completa del modelo
+        """
+        start_time = time.time()
+        
+        # Construir prompt
+        prompt, cache_stats = self.build_prompt(
+            session_id=llm_request.session_id,
+            system_prompt=llm_request.system_prompt,
+            user_input=llm_request.user_input,
+            use_cache=llm_request.use_cache
+        )
+        
+        # Construir body del request con streaming habilitado
+        body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": llm_request.max_tokens,
+            "system": llm_request.system_prompt,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": llm_request.user_input
+                }
+            ],
+            "temperature": llm_request.temperature
+        }
+        
+        # Agregar historial de conversación si existe
+        if llm_request.conversation_history:
+            body["messages"] = llm_request.conversation_history + body["messages"]
+        
+        self.logger.debug(f"Enviando request STREAMING a Bedrock para sesión {llm_request.session_id}")
+        self.logger.debug(f"Modelo: {self.model_id}")
+        
+        # 🔍 VUELQUE COMPLETO DEL MENSAJE AL LLM (SOLO AL LOG, NO A PANTALLA)
+        separator = "="*80
+        subseparator = "-"*80
+        self.logger.info(separator)
+        self.logger.info("📤 MENSAJE COMPLETO ENVIADO AL LLM (STREAMING)")
+        self.logger.info(separator)
+        self.logger.info(f"Sesión: {llm_request.session_id}")
+        self.logger.info(f"Modelo: {self.model_id}")
+        self.logger.info(f"Timestamp: {llm_request.timestamp}")
+        self.logger.info(subseparator)
+        self.logger.info("PROMPT DE SISTEMA:")
+        self.logger.info(subseparator)
+        self.logger.info(llm_request.system_prompt)
+        self.logger.info(subseparator)
+        self.logger.info("HISTORIAL DE CONVERSACIÓN:")
+        self.logger.info(subseparator)
+        if llm_request.conversation_history:
+            for msg in llm_request.conversation_history:
+                self.logger.info(f"[{msg['role'].upper()}]: {msg['content']}")
+        else:
+            self.logger.info("(Sin historial previo)")
+        self.logger.info(subseparator)
+        self.logger.info("INPUT DEL USUARIO:")
+        self.logger.info(subseparator)
+        self.logger.info(llm_request.user_input)
+        self.logger.info(separator)
+        
+        # Reintentos
+        for attempt in range(self.max_retries):
+            try:
+                # Usar invoke_model_with_response_stream para streaming
+                response = self.bedrock_client.invoke_model_with_response_stream(
+                    modelId=self.model_id,
+                    body=json.dumps(body)
+                )
+                
+                # Procesar stream
+                full_content = ""
+                stop_reason = "unknown"
+                usage = {}
+                
+                # Iterar sobre eventos del stream
+                for event in response['body']:
+                    chunk = json.loads(event['chunk']['bytes'])
+                    
+                    # Procesar diferentes tipos de eventos
+                    if chunk['type'] == 'message_start':
+                        # Inicio del mensaje
+                        usage = chunk.get('message', {}).get('usage', {})
+                        self.logger.debug("Stream iniciado")
+                    
+                    elif chunk['type'] == 'content_block_start':
+                        # Inicio de bloque de contenido
+                        self.logger.debug("Bloque de contenido iniciado")
+                    
+                    elif chunk['type'] == 'content_block_delta':
+                        # Delta de contenido - aquí vienen los tokens
+                        if 'delta' in chunk and 'text' in chunk['delta']:
+                            token = chunk['delta']['text']
+                            full_content += token
+                            
+                            # Llamar callback con el token
+                            try:
+                                token_callback(token)
+                            except Exception as e:
+                                self.logger.error(f"Error en callback de token: {str(e)}")
+                    
+                    elif chunk['type'] == 'content_block_stop':
+                        # Fin de bloque de contenido
+                        self.logger.debug("Bloque de contenido finalizado")
+                    
+                    elif chunk['type'] == 'message_delta':
+                        # Delta del mensaje (incluye stop_reason)
+                        if 'delta' in chunk:
+                            stop_reason = chunk['delta'].get('stop_reason', stop_reason)
+                        if 'usage' in chunk:
+                            # Actualizar usage con tokens de salida
+                            usage.update(chunk['usage'])
+                    
+                    elif chunk['type'] == 'message_stop':
+                        # Fin del mensaje
+                        self.logger.debug("Stream finalizado")
+                
+                execution_time = (time.time() - start_time) * 1000
+                
+                llm_response = LLMResponse(
+                    content=full_content,
+                    model=self.model_id,
+                    stop_reason=stop_reason,
+                    usage=usage,
+                    execution_time_ms=execution_time,
+                    cache_stats=cache_stats
+                )
+                
+                # 🔍 VUELQUE COMPLETO DE LA RESPUESTA DEL LLM (SOLO AL LOG, NO A PANTALLA)
+                self.logger.info(separator)
+                self.logger.info("📥 RESPUESTA COMPLETA DEL LLM (STREAMING)")
+                self.logger.info(separator)
+                self.logger.info(f"Sesión: {llm_request.session_id}")
+                self.logger.info(f"Modelo: {self.model_id}")
+                self.logger.info(f"Timestamp: {llm_response.timestamp}")
+                self.logger.info(f"Tiempo de ejecución: {execution_time:.2f}ms")
+                self.logger.info(f"Razón de parada: {llm_response.stop_reason}")
+                self.logger.info(subseparator)
+                self.logger.info("CONTENIDO DE LA RESPUESTA:")
+                self.logger.info(subseparator)
+                self.logger.info(llm_response.content)
+                self.logger.info(subseparator)
+                self.logger.info("ESTADÍSTICAS DE USO:")
+                self.logger.info(subseparator)
+                self.logger.info(f"Input tokens: {llm_response.usage.get('input_tokens', 0)}")
+                self.logger.info(f"Output tokens: {llm_response.usage.get('output_tokens', 0)}")
+                self.logger.info(f"Total tokens: {llm_response.usage.get('input_tokens', 0) + llm_response.usage.get('output_tokens', 0)}")
+                if cache_stats:
+                    self.logger.info(f"Cache habilitado: {cache_stats.get('cache_enabled', False)}")
+                    self.logger.info(f"System prompt cacheado: {cache_stats.get('system_prompt_cached', False)}")
+                    self.logger.info(f"Conversación cacheada: {cache_stats.get('conversation_cached', False)}")
+                self.logger.info(separator)
+                
+                self.logger.info(
+                    f"Response streaming recibida en {execution_time:.2f}ms "
+                    f"(tokens: {llm_response.usage.get('output_tokens', 0)})"
+                )
+                
+                return llm_response
+            
+            except (ClientError, BotoCoreError) as e:
+                self.logger.warning(
+                    f"Intento {attempt + 1}/{self.max_retries} falló: {str(e)}"
+                )
+                
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay_seconds)
+                else:
+                    self.logger.error(f"Todos los reintentos fallaron: {str(e)}")
+                    raise
+        
+        raise RuntimeError("No se pudo completar el request después de reintentos")
+    
     def send_request(self, llm_request: LLMRequest) -> LLMResponse:
         """
-        Envía un request a AWS Bedrock
+        Envía un request a AWS Bedrock (modo batch, sin streaming)
         
         Args:
             llm_request: Request al LLM
