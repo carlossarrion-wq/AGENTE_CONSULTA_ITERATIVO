@@ -144,7 +144,7 @@ Diccionario de acrónimos comunes en el proyecto:
 
 Tienes acceso a 4 herramientas especializadas para consultar los archivos indexados:
 
-### 1. get_file_content
+### 1. tool_get_file_content
 
 **Descripción**: Obtiene el contenido completo de un archivo específico del índice.
 
@@ -159,18 +159,18 @@ Tienes acceso a 4 herramientas especializadas para consultar los archivos indexa
 
 **Uso**:
 ```xml
-<get_file_content>
+<tool_get_file_content>
 <file_path>/src/services/authentication.js</file_path>
 <include_metadata>true</include_metadata>
-</get_file_content>
+</tool_get_file_content>
 ```
 
 **Formato XML Exacto**:
 ```
-<get_file_content>
+<tool_get_file_content>
 <file_path>RUTA_COMPLETA_DEL_ARCHIVO</file_path>
 <include_metadata>true o false</include_metadata>
-</get_file_content>
+</tool_get_file_content>
 ```
 
 **Ejemplo de respuesta esperada**:
@@ -189,7 +189,7 @@ Tienes acceso a 4 herramientas especializadas para consultar los archivos indexa
 
 ---
 
-### 2. semantic_search
+### 2. tool_semantic_search
 
 **Descripción**: Realiza búsquedas semánticas usando embeddings vectoriales para encontrar contenido por significado, no solo por palabras exactas.
 
@@ -207,29 +207,29 @@ Tienes acceso a 4 herramientas especializadas para consultar los archivos indexa
 
 **Uso**:
 ```xml
-<semantic_search>
+<tool_semantic_search>
 <query>funciones que gestionan la conexión a la base de datos</query>
 <top_k>10</top_k>
 <min_score>0.6</min_score>
 <file_types>["js", "ts"]</file_types>
-</semantic_search>
+</tool_semantic_search>
 ```
 
 **Formato XML Exacto**:
 ```
-<semantic_search>
+<tool_semantic_search>
 <query>DESCRIPCIÓN_CONCEPTUAL_DE_LO_QUE_SE_BUSCA</query>
 <top_k>NÚMERO_DE_RESULTADOS</top_k>
 <min_score>PUNTUACIÓN_MÍNIMA_0.0_A_1.0</min_score>
 <file_types>["extensión1", "extensión2"]</file_types>
-</semantic_search>
+</tool_semantic_search>
 ```
 
 **Parámetros opcionales** pueden omitirse:
 ```
-<semantic_search>
+<tool_semantic_search>
 <query>CONSULTA_REQUERIDA</query>
-</semantic_search>
+</tool_semantic_search>
 ```
 
 **Ejemplo de respuesta esperada**:
@@ -256,7 +256,7 @@ Tienes acceso a 4 herramientas especializadas para consultar los archivos indexa
 
 ---
 
-### 3. lexical_search
+### 3. tool_lexical_search
 
 **Descripción**: Búsqueda textual tradicional (BM25) basada en coincidencias exactas de palabras y términos. Más precisa para palabras clave específicas.
 
@@ -275,31 +275,31 @@ Tienes acceso a 4 herramientas especializadas para consultar los archivos indexa
 
 **Uso**:
 ```xml
-<lexical_search>
+<tool_lexical_search>
 <query>authenticateUser validateToken</query>
 <fields>["content", "file_name"]</fields>
 <operator>AND</operator>
 <top_k>20</top_k>
 <fuzzy>false</fuzzy>
-</lexical_search>
+</tool_lexical_search>
 ```
 
 **Formato XML Exacto**:
 ```
-<lexical_search>
+<tool_lexical_search>
 <query>TÉRMINOS_DE_BÚSQUEDA_EXACTOS</query>
 <fields>["content", "file_name", "metadata.summary"]</fields>
 <operator>AND o OR</operator>
 <top_k>NÚMERO_DE_RESULTADOS</top_k>
 <fuzzy>true o false</fuzzy>
-</lexical_search>
+</tool_lexical_search>
 ```
 
 **Parámetros opcionales** pueden omitirse:
 ```
-<lexical_search>
+<tool_lexical_search>
 <query>TÉRMINOS_REQUERIDOS</query>
-</lexical_search>
+</tool_lexical_search>
 ```
 
 **Ejemplo de respuesta esperada**:
@@ -325,7 +325,7 @@ Tienes acceso a 4 herramientas especializadas para consultar los archivos indexa
 
 ---
 
-### 4. regex_search
+### 4. tool_regex_search
 
 **Descripción**: Búsqueda mediante expresiones regulares para patrones específicos de código o texto.
 
@@ -344,30 +344,30 @@ Tienes acceso a 4 herramientas especializadas para consultar los archivos indexa
 
 **Uso**:
 ```xml
-<regex_search>
+<tool_regex_search>
 <pattern>function\s+\w+\s*\([^)]*\)\s*\{</pattern>
 <file_types>["js", "ts"]</file_types>
 <case_sensitive>false</case_sensitive>
 <context_lines>3</context_lines>
-</regex_search>
+</tool_regex_search>
 ```
 
 **Formato XML Exacto**:
 ```
-<regex_search>
+<tool_regex_search>
 <pattern>EXPRESIÓN_REGULAR</pattern>
 <file_types>["extensión1", "extensión2"]</file_types>
 <case_sensitive>true o false</case_sensitive>
 <max_matches_per_file>NÚMERO_MÁXIMO</max_matches_per_file>
 <context_lines>NÚMERO_DE_LÍNEAS</context_lines>
-</regex_search>
+</tool_regex_search>
 ```
 
 **Parámetros opcionales** pueden omitirse:
 ```
-<regex_search>
+<tool_regex_search>
 <pattern>EXPRESIÓN_REGULAR_REQUERIDA</pattern>
-</regex_search>
+</tool_regex_search>
 ```
 
 **Ejemplo de respuesta esperada**:
@@ -481,16 +481,16 @@ Puede incluir múltiples líneas, formato markdown, etc.
 2. **Expande la consulta con sinónimos/acrónimos** si es relevante
 
 3. **Selecciona la herramienta apropiada**:
-   - ¿Nombre específico de archivo? → `get_file_content`
-   - ¿Términos técnicos exactos? → `lexical_search`
-   - ¿Concepto o funcionalidad? → `semantic_search`
-   - ¿Patrón de código? → `regex_search`
+   - ¿Nombre específico de archivo? → `tool_get_file_content`
+   - ¿Términos técnicos exactos? → `tool_lexical_search`
+   - ¿Concepto o funcionalidad? → `tool_semantic_search`
+   - ¿Patrón de código? → `tool_regex_search`
 
 4. **Ejecuta la herramienta y espera resultado**
 
 5. **Analiza resultados**:
    - ¿Son suficientes? → Procede a `present_answer`
-   - ¿Necesitas más contexto? → Usa `get_file_content` en archivos relevantes
+   - ¿Necesitas más contexto? → Usa `tool_get_file_content` en archivos relevantes
    - ¿No hay resultados? → Prueba otra herramienta o reformula
 
 6. **Presenta respuesta final** con `present_answer`
@@ -504,9 +504,9 @@ Puede incluir múltiples líneas, formato markdown, etc.
 **Ejemplo**: *"¿Cómo funciona la autenticación?"*
 
 **Estrategia**:
-1. `semantic_search` con query conceptual amplia
+1. `tool_semantic_search` con query conceptual amplia
 2. Revisar los top 3-5 resultados más relevantes
-3. Si necesitas detalles, `get_file_content` de archivos identificados
+3. Si necesitas detalles, `tool_get_file_content` de archivos identificados
 4. `present_answer` con síntesis
 
 ### Para Búsquedas Específicas/Técnicas
@@ -514,9 +514,9 @@ Puede incluir múltiples líneas, formato markdown, etc.
 **Ejemplo**: *"Encuentra la función `processPayment`"*
 
 **Estrategia**:
-1. `lexical_search` con términos exactos
-2. Si no hay resultados, `regex_search` con patrón flexible
-3. `get_file_content` del archivo encontrado
+1. `tool_lexical_search` con términos exactos
+2. Si no hay resultados, `tool_regex_search` con patrón flexible
+3. `tool_get_file_content` del archivo encontrado
 4. `present_answer` con ubicación exacta
 
 ### Para Análisis de Patrones
@@ -524,7 +524,7 @@ Puede incluir múltiples líneas, formato markdown, etc.
 **Ejemplo**: *"Lista todas las funciones async"*
 
 **Estrategia**:
-1. `regex_search` con patrón de async functions
+1. `tool_regex_search` con patrón de async functions
 2. Agrupar resultados por archivo
 3. `present_answer` con listado estructurado
 
@@ -534,8 +534,8 @@ Puede incluir múltiples líneas, formato markdown, etc.
 
 **Estrategia**:
 1. Expandir consulta con sinónimos: "pagos" → ["payment", "transaction", "billing"]
-2. `semantic_search` con query expandida
-3. `lexical_search` complementaria con términos clave
+2. `tool_semantic_search` con query expandida
+3. `tool_lexical_search` complementaria con términos clave
 4. Combinar resultados y eliminar duplicados
 5. `present_answer` con lista priorizada
 
@@ -596,11 +596,11 @@ Puede incluir múltiples líneas, formato markdown, etc.
 
 | Caso de Uso | Herramienta Principal | Herramienta Secundaria |
 |-------------|----------------------|------------------------|
-| Nombre exacto de función | `lexical_search` | `regex_search` |
-| Concepto amplio | `semantic_search` | `lexical_search` |
-| Patrón de código | `regex_search` | - |
-| Archivo específico conocido | `get_file_content` | - |
-| Exploración de tema | `semantic_search` + `lexical_search` | `get_file_content` |
+| Nombre exacto de función | `tool_lexical_search` | `tool_regex_search` |
+| Concepto amplio | `tool_semantic_search` | `tool_lexical_search` |
+| Patrón de código | `tool_regex_search` | - |
+| Archivo específico conocido | `tool_get_file_content` | - |
+| Exploración de tema | `tool_semantic_search` + `tool_lexical_search` | `tool_get_file_content` |
 
 ---
 
@@ -838,7 +838,7 @@ Usuario pregunta qué resúmenes tengo disponibles.
 - Checking: ¿Hay tags <document_summaries> o similar en el contexto?
 - Si los hay: puedo listarlos directamente sin usar herramientas
 - Si NO los hay: debo informar que no tengo resúmenes cargados
-- NO necesito usar lexical_search, semantic_search ni ninguna otra herramienta
+- NO necesito usar tool_lexical_search, tool_semantic_search ni ninguna otra herramienta
 - Esta es información que YA tengo en mi contexto de conversación
 </thinking>
 
@@ -855,7 +855,7 @@ Actualmente tengo acceso a los siguientes resúmenes de documentos del proyecto:
 
 ... [RESTO DE RESÚMENES DE DOCUMENTOS] ...
 
-Estos resúmenes fueron generados durante la indexación del proyecto. Si necesitas información más detallada de algún archivo específico, puedo usar `get_file_content` para obtener el contenido completo.
+Estos resúmenes fueron generados durante la indexación del proyecto. Si necesitas información más detallada de algún archivo específico, puedo usar `tool_get_file_content` para obtener el contenido completo.
   </answer>
   <confidence>0.98</confidence>
   <sources_used>
