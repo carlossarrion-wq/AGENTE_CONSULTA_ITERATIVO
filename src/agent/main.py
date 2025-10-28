@@ -20,8 +20,13 @@ def setup_logging():
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
     
+    # Crear directorio logs si no existe
+    logs_dir = Path(__file__).parent.parent.parent / 'logs'
+    logs_dir.mkdir(exist_ok=True)
+    
     # Handler para archivo: TODO el detalle (DEBUG level)
-    file_handler = logging.FileHandler('agent.log')
+    log_file = logs_dir / 'agent.log'
+    file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(file_formatter)
