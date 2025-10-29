@@ -325,17 +325,17 @@ class WebCrawlerTool:
     def _search_duckduckgo(self, query: str) -> List[str]:
         """Busca URLs usando DuckDuckGo"""
         try:
-            # Usar el nuevo paquete ddgs
+            # Usar el paquete duckduckgo-search
             try:
-                from ddgs import DDGS
+                from duckduckgo_search import DDGS
             except ImportError:
                 self.logger.error(
-                    "El paquete 'ddgs' no está instalado. "
-                    "Por favor ejecuta: pip3 uninstall duckduckgo-search && pip3 install ddgs"
+                    "El paquete 'duckduckgo-search' no está instalado. "
+                    "Por favor ejecuta: pip3 install duckduckgo-search"
                 )
                 raise ImportError(
-                    "Paquete 'ddgs' no encontrado. "
-                    "Ejecuta: pip3 uninstall duckduckgo-search && pip3 install ddgs"
+                    "Paquete 'duckduckgo-search' no encontrado. "
+                    "Ejecuta: pip3 install duckduckgo-search"
                 )
             
             # Realizar búsqueda
