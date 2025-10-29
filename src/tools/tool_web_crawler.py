@@ -385,7 +385,7 @@ class WebCrawlerTool:
                     self.logger.error(f"Error en búsqueda simplificada: {e2}")
             
             if not results:
-                self.logger.warning(f"DuckDuckGo no devolvió resultados para: {query}")
+                self.logger.debug(f"DuckDuckGo no devolvió resultados para: {query}")
                 return []
             
             urls = [r.get('href') or r.get('link') for r in results if r.get('href') or r.get('link')]
@@ -394,7 +394,7 @@ class WebCrawlerTool:
             return urls
         
         except Exception as e:
-            self.logger.error(f"Error en búsqueda DuckDuckGo: {e}")
+            self.logger.debug(f"Error en búsqueda DuckDuckGo: {e}")
             return []
     
     def _extract_content(self, url: str) -> Dict[str, Any]:
@@ -515,7 +515,7 @@ class WebCrawlerTool:
             
             # Detectar bloqueos comunes
             if response.status_code in [403, 429, 503]:
-                self.logger.warning(f"Posible bloqueo (status {response.status_code}): {url}")
+                self.logger.debug(f"Posible bloqueo (status {response.status_code}): {url}")
                 return None
             
             response.raise_for_status()
@@ -533,12 +533,12 @@ class WebCrawlerTool:
             ]
             
             if any(indicator in content_lower for indicator in block_indicators):
-                self.logger.warning(f"Posible página de bloqueo detectada: {url}")
+                self.logger.debug(f"Posible página de bloqueo detectada: {url}")
                 return None
             
             # Verificar que el contenido no esté vacío
             if len(content.strip()) < 200:
-                self.logger.warning(f"Contenido sospechosamente corto: {url}")
+                self.logger.debug(f"Contenido sospechosamente corto: {url}")
                 return None
             
             # Usar html.parser (nativo de Python) en lugar de lxml
@@ -558,9 +558,9 @@ class WebCrawlerTool:
                     'method': 'beautifulsoup'
                 }
         except requests.exceptions.TooManyRedirects:
-            self.logger.warning(f"Demasiadas redirecciones para {url}")
+            self.logger.debug(f"Demasiadas redirecciones para {url}")
         except requests.exceptions.Timeout:
-            self.logger.warning(f"Timeout al acceder a {url}")
+            self.logger.debug(f"Timeout al acceder a {url}")
         except Exception as e:
             self.logger.debug(f"BeautifulSoup falló para {url}: {e}")
         
