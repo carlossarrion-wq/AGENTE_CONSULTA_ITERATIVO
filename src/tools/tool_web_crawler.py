@@ -339,33 +339,25 @@ class WebCrawlerTool:
                 )
             
             # Realizar búsqueda
-            # En duckduckgo-search 3.8.0+, DDGS() puede tener diferentes firmas
-            # Intentar crear instancia con diferentes configuraciones
+            # IMPORTANTE: En duckduckgo-search 3.9.x hay un bug con el parámetro 'proxies'
+            # El constructor DDGS.__init__ acepta proxies pero Client.__init__ no
+            # Solución: Pasar headers=None explícitamente para evitar el bug
             ddgs = None
             
-            # Intento 1: Sin parámetros (versión más reciente)
             try:
-                ddgs = DDGS()
+                # Versión 3.9.x: Pasar headers=None evita el bug de proxies
+                ddgs = DDGS(headers=None)
+                self.logger.debug("DDGS inicializado con headers=None")
             except (TypeError, Exception) as e:
-                self.logger.debug(f"DDGS() sin parámetros falló: {e}")
+                self.logger.debug(f"DDGS(headers=None) falló: {e}")
                 
-                # Intento 2: Con timeout
+                # Fallback: Intentar sin ningún parámetro
                 try:
-                    ddgs = DDGS(timeout=20)
+                    ddgs = DDGS()
+                    self.logger.debug("DDGS inicializado sin parámetros")
                 except (TypeError, Exception) as e2:
-                    self.logger.debug(f"DDGS(timeout=20) falló: {e2}")
-                    
-                    # Intento 3: Importar y usar versión alternativa si existe
-                    try:
-                        # Algunas versiones antiguas usan una clase diferente
-                        from duckduckgo_search import ddg
-                        self.logger.info("Usando API alternativa de duckduckgo-search")
-                        # Esta es una API diferente, retornar vacío para evitar errores
-                        self.logger.error("API de duckduckgo-search no compatible con esta versión")
-                        return []
-                    except:
-                        self.logger.error("No se pudo crear instancia de DDGS con ningún método")
-                        return []
+                    self.logger.error(f"No se pudo crear instancia de DDGS: {e2}")
+                    return []
             
             if ddgs is None:
                 self.logger.error("No se pudo inicializar DDGS")

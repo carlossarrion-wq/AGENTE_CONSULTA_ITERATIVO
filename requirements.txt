@@ -19,7 +19,9 @@ requests-aws4auth>=1.1.2
 typing-extensions>=4.0.0
 
 # Web Crawler
-duckduckgo-search>=3.8.0,<4.0.0
+# Versión 3.0.2 es estable y compatible con httpx antiguo
+# Versiones más nuevas tienen conflictos de dependencias con httpx
+duckduckgo-search==3.0.2
 beautifulsoup4>=4.11.0,<4.13.0
 requests>=2.28.0,<2.32.0
 # trafilatura y lxml son opcionales (requieren compilación en algunos sistemas)
