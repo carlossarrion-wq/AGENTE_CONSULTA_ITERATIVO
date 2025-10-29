@@ -340,17 +340,36 @@ class WebCrawlerTool:
             
             # Realizar búsqueda
             # En duckduckgo-search 3.8.0+, DDGS() puede tener diferentes firmas
-            # Intentar crear instancia sin parámetros
+            # Intentar crear instancia con diferentes configuraciones
+            ddgs = None
+            
+            # Intento 1: Sin parámetros (versión más reciente)
             try:
                 ddgs = DDGS()
-            except TypeError as e:
-                self.logger.error(f"Error creando instancia DDGS: {e}")
-                # Algunas versiones pueden requerir parámetros específicos
+            except (TypeError, Exception) as e:
+                self.logger.debug(f"DDGS() sin parámetros falló: {e}")
+                
+                # Intento 2: Con timeout
                 try:
                     ddgs = DDGS(timeout=20)
-                except:
-                    self.logger.error("No se pudo crear instancia de DDGS")
-                    return []
+                except (TypeError, Exception) as e2:
+                    self.logger.debug(f"DDGS(timeout=20) falló: {e2}")
+                    
+                    # Intento 3: Importar y usar versión alternativa si existe
+                    try:
+                        # Algunas versiones antiguas usan una clase diferente
+                        from duckduckgo_search import ddg
+                        self.logger.info("Usando API alternativa de duckduckgo-search")
+                        # Esta es una API diferente, retornar vacío para evitar errores
+                        self.logger.error("API de duckduckgo-search no compatible con esta versión")
+                        return []
+                    except:
+                        self.logger.error("No se pudo crear instancia de DDGS con ningún método")
+                        return []
+            
+            if ddgs is None:
+                self.logger.error("No se pudo inicializar DDGS")
+                return []
             
             # text() devuelve un generador y acepta parámetros de búsqueda
             results = []
