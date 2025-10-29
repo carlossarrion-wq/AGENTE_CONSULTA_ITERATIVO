@@ -1,6 +1,6 @@
 # Agente IA de Consulta Darwin
 
-Sistema de agente conversacional inteligente para consulta de la base de conocimiento Darwin con capacidades de búsqueda semántica, léxica, regex y gestión avanzada de conversaciones.
+Sistema de agente conversacional inteligente para consulta de la base de conocimiento Darwin con capacidades de búsqueda semántica, léxica, regex, web crawler y gestión avanzada de conversaciones.
 
 ## 📋 Tabla de Contenidos
 
@@ -23,11 +23,14 @@ El **Agente IA de Consulta Darwin** es un sistema conversacional avanzado diseñ
 ### Características Principales
 
 - **🤖 Agente Conversacional Inteligente**: Interfaz de chat natural con gestión de contexto conversacional
-- **🔍 Búsqueda Multimodal**: 4 herramientas especializadas de búsqueda (semántica, léxica, regex, contenido de archivos)
+- **🔍 Búsqueda Multimodal**: 5 herramientas especializadas de búsqueda (semántica, léxica, regex, contenido de archivos, web crawler)
+- **🌐 Web Crawler Integrado**: Búsqueda de información actualizada en internet con controles de seguridad
 - **💾 Prompt Caching Avanzado**: Optimización de tokens con reducción del 60-80% en conversaciones largas
 - **📊 Gestión de Contexto**: Sliding window inteligente para mantener conversaciones extensas
 - **🔄 Carga Dinámica de Documentos**: Integración con S3 para actualización automática de catálogo
 - **📝 Logging Estructurado**: Registro completo de interacciones LLM en formato JSON
+- **🎨 Diagramas ASCII**: Visualización profesional de arquitecturas y flujos con caracteres ASCII
+- **🔐 Gestión de Sesiones**: Soporte para múltiples sesiones de conversación
 - **🌐 Conectividad AWS**: Soporte para túneles SSH y diagnósticos de red
 
 ### Casos de Uso
@@ -36,6 +39,7 @@ El **Agente IA de Consulta Darwin** es un sistema conversacional avanzado diseñ
 2. **Búsqueda de Código**: "Encuentra todas las funciones que validan tokens OAuth"
 3. **Análisis de Documentación**: "Resume el contenido del documento de especificaciones técnicas"
 4. **Exploración de Arquitectura**: "Explica la arquitectura de microservicios de Darwin"
+5. **Información Actualizada**: "¿Cuáles son las últimas actualizaciones de SAP S/4HANA?"
 
 ---
 
@@ -44,33 +48,36 @@ El **Agente IA de Consulta Darwin** es un sistema conversacional avanzado diseñ
 ### Diagrama de Arquitectura
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         AGENTE IA DARWIN                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                 │
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         AGENTE IA DARWIN                                   │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  ┌──────────────┐    ┌─────────-─────┐    ┌─-─────────────┐                │
 │  │Chat Interface│◄──►│Request Handler│◄──►│LLM Comm Module│                │
 │  │              │    │(Orchestrator) │    │               │                │
 │  │• Input Mgmt  │    │• Flow Control │    │• AWS Bedrock  │                │
 │  │• Display     │    │• State Mgmt   │    │• Prompt Cache │                │
-│  └──────────────┘    └──────────────┘    └──────────────┘                 │
-│         │                     │                     │                       │
-│         │            ┌──────────────┐              │                       │
-│         │            │Tool Execution│              │                       │
-│         │            │    Engine    │              │                       │
-│         │            │• XML Parser  │              │                       │
-│         │            │• Tool Router │              │                       │
-│         │            └──────────────┘              │                       │
-│         │                     │                     │                       │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                 │
-│  │Response      │    │Config Manager│    │Knowledge Base│                 │
-│  │Formatter     │    │              │    │  Interface   │                 │
-│  │• Formatting  │    │• YAML Config │    │• Semantic    │                 │
-│  │• Filtering   │    │• Validation  │    │• Lexical     │                 │
-│  └──────────────┘    └──────────────┘    │• Regex       │                 │
-│                                           │• File Content│                 │
-│                                           └──────────────┘                 │
-└─────────────────────────────────────────────────────────────────────────────┘
+│  │• Streaming   │    │• XML Parser   │    │• Streaming    │                │
+│  └──────────────┘    └──────────-────┘    └───-───────────┘                │
+│         │                     │                     │                      │
+│         │            ┌──────────────┐               │                      │
+│         │            │Tool Execution│               │                      │
+│         │            │    Engine    │               │                      │
+│         │            │• XML Parser  │               │                      │
+│         │            │• Tool Router │               │                      │
+│         │            │• App Context │               │                      │
+│         │            └──────────────┘               │                      │
+│         │                     │                     │                      │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
+│  │Response      │    │Config Manager│    │Knowledge Base│                  │
+│  │Formatter     │    │              │    │  Interface   │                  │
+│  │• Formatting  │    │• YAML Config │    │• Semantic    │                  │
+│  │• Filtering   │    │• Validation  │    │• Lexical     │                  │
+│  │• Markdown    │    │• Multi-App   │    │• Regex       │                  │
+│  └──────────────┘    └──────────────┘    │• File Content│                  │
+│                                          │• Web Crawler │                  │
+│                                          └──────────────┘                  │
+└────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
                     ┌───────────────────────────────┐
@@ -100,6 +107,7 @@ Usuario → Chat Interface → Request Handler → Prompt Cache Manager
                     │ <lexical_search> → OpenSearch     │
                     │ <regex_search> → OpenSearch       │
                     │ <get_file_content> → OpenSearch   │
+                    │ <web_crawler> → Internet          │
                     └───────────────────────────────────┘
                                     ↓
                           Consolidación de Resultados
@@ -124,6 +132,7 @@ Usuario → Chat Interface → Request Handler → Prompt Cache Manager
 - Visualización de respuestas formateadas con colores
 - Manejo de historial de conversación
 - Comandos especiales (/help, /history, /clear, /exit)
+- Soporte multi-aplicación (Darwin, SAP, MuleSoft)
 
 ### 2. Request Handler (`src/agent/request_handler.py`)
 
@@ -145,6 +154,7 @@ Usuario → Chat Interface → Request Handler → Prompt Cache Manager
 - Envío de requests a AWS Bedrock
 - Manejo de errores y reintentos
 - Logging completo de interacciones
+- **Streaming de respuestas**: Visualización en tiempo real
 
 **Configuración**:
 ```yaml
@@ -155,42 +165,25 @@ llm:
   max_retries: 3
 ```
 
-### 4. Prompt Cache Manager (`src/agent/prompt_cache_manager.py`)
+### 4. Streaming State Machine (`src/agent/streaming_state_machine.py`)
 
-**Responsabilidad**: Gestión inteligente del cache de prompts
-
-**Funcionalidades Clave**:
-- Cache de System Prompt (una sola vez por sesión)
-- Cache Conversacional con updates incrementales
-- Compresión inteligente de contexto
-- Sliding window para contexto relevante
-
-**Beneficios**:
-- **Reducción 60-80% en tokens** por request después del primer turno
-- **Ahorro significativo en costos** de API
-- **Latencia reducida** al no reenviar contexto completo
-- **Mejor experiencia de usuario**
-
-### 5. Conversation Manager (`src/agent/conversation_manager.py`)
-
-**Responsabilidad**: Gestión del historial conversacional
+**Responsabilidad**: Procesamiento de respuestas streaming del LLM
 
 **Funcionalidades**:
-- Historial estructurado de turnos usuario/asistente
-- Monitoreo de uso de tokens
-- Context Window Management (180K tokens)
-- Sliding window con mínimo de turnos a mantener
+- Máquina de estados para procesamiento de bloques XML
+- Detección de tags de herramientas
+- Limpieza de markdown (```xml, ``` `)
+- Visualización en tiempo real de respuestas
 
-**Configuración**:
-```yaml
-conversation:
-  max_history_turns: 15
-  context_window_tokens: 180000
-  system_prompt_caching: true
-  tool_results_caching: true
-  enable_sliding_window: true
-  min_turns_to_keep: 3
-```
+### 5. Streaming Display (`src/agent/streaming_display.py`)
+
+**Responsabilidad**: Visualización de respuestas streaming
+
+**Funcionalidades**:
+- Display de texto en tiempo real
+- Indicadores visuales de herramientas
+- Formateo de colores
+- Limpieza de líneas extra
 
 ### 6. Tool Executor (`src/agent/tool_executor.py`)
 
@@ -199,11 +192,22 @@ conversation:
 **Funcionalidades**:
 - Parsing de tags XML en respuestas LLM
 - Enrutamiento a herramientas específicas
+- **Inyección automática de app_name** para web_crawler
 - Consolidación de resultados múltiples
 - Manejo de errores de herramientas
 - Logging detallado de ejecuciones
 
-### 7. S3 Summaries Loader (`src/agent/s3_summaries_loader.py`)
+### 7. Session Manager (`src/agent/session_manager.py`)
+
+**Responsabilidad**: Gestión de sesiones de conversación
+
+**Funcionalidades**:
+- Creación y gestión de sesiones
+- Persistencia de historial conversacional
+- Recuperación de sesiones anteriores
+- Limpieza de sesiones antiguas
+
+### 8. S3 Summaries Loader (`src/agent/s3_summaries_loader.py`)
 
 **Responsabilidad**: Carga dinámica de resúmenes de documentos desde S3
 
@@ -221,12 +225,12 @@ s3:
   prefix: "applications/darwin/"
 ```
 
-### 8. Configuration Manager (`src/agent/config_manager.py`)
+### 9. Configuration Manager (`src/agent/config_manager.py`)
 
 **Responsabilidad**: Gestión centralizada de configuración
 
 **Funcionalidades**:
-- Carga de `config/config.yaml`
+- Carga de configuración multi-aplicación
 - Validación de configuración
 - Acceso a configuración por secciones
 - Soporte para valores por defecto
@@ -241,18 +245,18 @@ s3:
 
 **Uso en XML**:
 ```xml
-<semantic_search>
+<tool_semantic_search>
 <query>módulos principales Darwin arquitectura componentes</query>
 <top_k>10</top_k>
-<min_score>0.5</min_score>
+<min_score>0.2</min_score>
 <file_types>["docx", "pdf"]</file_types>
-</semantic_search>
+</tool_semantic_search>
 ```
 
 **Parámetros**:
 - `query` (requerido): Descripción conceptual de lo que se busca
 - `top_k` (opcional): Número de resultados (default: 10)
-- `min_score` (opcional): Puntuación mínima 0.0-1.0 (default: 0.5)
+- `min_score` (opcional): Puntuación mínima 0.0-1.0 (default: 0.5, recomendado: 0.0-0.3 para KNN)
 - `file_types` (opcional): Filtrar por tipos de archivo
 
 **Casos de Uso**:
@@ -266,13 +270,13 @@ s3:
 
 **Uso en XML**:
 ```xml
-<lexical_search>
+<tool_lexical_search>
 <query>authenticateUser validateToken</query>
 <fields>["content", "file_name"]</fields>
 <operator>AND</operator>
 <top_k>20</top_k>
 <fuzzy>false</fuzzy>
-</lexical_search>
+</tool_lexical_search>
 ```
 
 **Parámetros**:
@@ -293,13 +297,13 @@ s3:
 
 **Uso en XML**:
 ```xml
-<regex_search>
+<tool_regex_search>
 <pattern>function\s+\w+\s*\([^)]*\)\s*\{</pattern>
 <file_types>["js", "ts"]</file_types>
 <case_sensitive>false</case_sensitive>
 <max_matches_per_file>50</max_matches_per_file>
 <context_lines>3</context_lines>
-</regex_search>
+</tool_regex_search>
 ```
 
 **Parámetros**:
@@ -320,10 +324,10 @@ s3:
 
 **Uso en XML**:
 ```xml
-<get_file_content>
+<tool_get_file_content>
 <file_path>FD-Darwin_Funcional0_v2.9.docx</file_path>
 <include_metadata>true</include_metadata>
-</get_file_content>
+</tool_get_file_content>
 ```
 
 **Parámetros**:
@@ -340,6 +344,65 @@ s3:
 - Obtener documento completo para análisis
 - Leer especificaciones técnicas completas
 - Extraer contenido para procesamiento
+
+### 5. Web Crawler (NUEVO)
+
+**Descripción**: Búsqueda de información actualizada en internet con controles de seguridad
+
+**Uso en XML**:
+```xml
+<tool_web_crawler>
+<url>https://docs.mulesoft.com/mule-runtime/latest</url>
+<max_pages>3</max_pages>
+<keywords>["API", "integration", "connector"]</keywords>
+</tool_web_crawler>
+```
+
+**Parámetros**:
+- `url` (requerido): URL a explorar
+- `max_pages` (opcional): Máximo de páginas a seguir (default: 1)
+- `keywords` (opcional): Palabras clave para filtrar contenido relevante
+
+**Características de Seguridad**:
+- **Validación de URLs**: Solo dominios permitidos por aplicación
+- **Filtrado de keywords**: Validación de términos relacionados con la aplicación
+- **Caching**: Almacenamiento de resultados para evitar requests duplicados
+- **Rate limiting**: Control de frecuencia de requests
+- **Anti-bot detection**: Estrategias para evitar bloqueos
+
+**Configuración por Aplicación**:
+```yaml
+web_crawler:
+  darwin:
+    allowed_domains:
+      - "docs.oracle.com"
+      - "developer.salesforce.com"
+    required_keywords:
+      - "darwin"
+      - "naturgy"
+  
+  mulesoft:
+    allowed_domains:
+      - "docs.mulesoft.com"
+      - "help.mulesoft.com"
+    required_keywords:
+      - "mulesoft"
+      - "anypoint"
+  
+  sap:
+    allowed_domains:
+      - "help.sap.com"
+      - "support.sap.com"
+    required_keywords:
+      - "sap"
+      - "s/4hana"
+```
+
+**Casos de Uso**:
+- Obtener información actualizada de documentación oficial
+- Buscar release notes y actualizaciones
+- Consultar mejores prácticas actuales
+- Verificar información de APIs y servicios
 
 ---
 
@@ -375,38 +438,18 @@ aws configure
 # Ingresar Access Key ID, Secret Access Key, Region (eu-west-1)
 ```
 
-2. **Configurar `config/config.yaml`**:
-```yaml
-# Configuración de OpenSearch
-opensearch:
-  host: "localhost"  # o VPC endpoint
-  port: 9201
-  use_ssl: true
-  verify_certs: false
-  region: "eu-west-1"
-  index_name: "rag-documents-darwin"
+2. **Configurar archivos de configuración por aplicación**:
+   - `config/config_darwin.yaml` - Configuración para Darwin
+   - `config/config_mulesoft.yaml` - Configuración para MuleSoft
+   - `config/config_sap.yaml` - Configuración para SAP
 
-# Configuración de AWS Bedrock
-bedrock:
-  region_name: "eu-west-1"
-  model_id: "amazon.titan-embed-image-v1"
+3. **Configurar System Prompts**:
+   - `config/system_prompt_darwin.md` - Prompt para Darwin
+   - `config/system_prompt_mulesoft.md` - Prompt para MuleSoft
+   - `config/system_prompt_sap.md` - Prompt para SAP
 
-# Configuración del LLM
-llm:
-  model_id: "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
-  max_tokens: 4000
-  temperature: 0.1
-
-# Configuración de conversación
-conversation:
-  max_history_turns: 15
-  context_window_tokens: 180000
-  enable_sliding_window: true
-```
-
-3. **Configurar System Prompt** (opcional):
-   - El system prompt se carga desde `config/system_prompt_darwin.md`
-   - Incluye marcador `{{DYNAMIC_SUMMARIES}}` para carga dinámica desde S3
+4. **Configurar Web Crawler** (opcional):
+   - `config/web_crawler_config.yaml` - Configuración de dominios y keywords permitidos
 
 ### Configuración de Túnel SSH (Desarrollo Local)
 
@@ -430,8 +473,14 @@ python3 src/ssh_tunnel/aws_tunnel.py --local-port 9201
 ### Iniciar el Agente
 
 ```bash
-# Desde la raíz del proyecto
+# Darwin (por defecto)
 python3 src/agent/main.py
+
+# MuleSoft
+python3 src/agent/main.py --app mulesoft
+
+# SAP
+python3 src/agent/main.py --app sap
 ```
 
 ### Comandos Disponibles
@@ -470,17 +519,53 @@ Agente: He encontrado 15 funciones que validan tokens:
 ...
 ```
 
-#### Ejemplo 3: Análisis de Documento
+#### Ejemplo 3: Información Actualizada de Internet
 ```
-Usuario: Resume el contenido del documento FD-Darwin_Funcional0_v2.9.docx
+Usuario: ¿Cuáles son las últimas actualizaciones de MuleSoft Runtime?
 
-Agente: Voy a obtener el contenido del documento...
-[Ejecuta get_file_content internamente]
+Agente: Voy a buscar información actualizada en la documentación oficial...
+[Ejecuta web_crawler internamente]
 
-Agente: El documento contiene la especificación funcional del módulo de Contratación:
-- Procesos de contratación asistida y no asistida
-- Lógica de búsqueda de direcciones
+Agente: Las últimas actualizaciones de MuleSoft Runtime incluyen:
+1. Mule 4.5 - Mejoras en performance
+2. Nuevos conectores para servicios cloud
 ...
+```
+
+#### Ejemplo 4: Diagrama de Arquitectura
+```
+Usuario: Explica la arquitectura de integración entre Salesforce, MuleSoft y SAP
+
+Agente: La arquitectura de integración sigue este flujo:
+
+┌─────────────────────────────────────────────────────────────────┐
+│                  ARQUITECTURA DE INTEGRACIONES                  │
+└─────────────────────────────────────────────────────────────────┘
+
+                    SALESFORCE (Front-End)
+                            │
+                            │ JSON con datos del proceso
+                            │
+                            ▼
+              ┌──────────────────────────────┐
+              │   MULESOFT (Orquestación)    │
+              │  - Gestión de errores        │
+              │  - Reprocesamiento           │
+              └──────────────────────────────┘
+                            │
+              ┌─────────────┼─────────────┐
+              │             │             │
+              ▼             ▼             ▼
+        ┌──────────┐  ┌──────────┐  ┌──────────┐
+        │ Cliente  │  │  Punto   │  │  Cuenta  │
+        │          │  │Suministro│  │ Contrato │
+        └──────────┘  └──────────┘  └──────────┘
+                            │
+                            ▼
+                    SAP ISU (Back-End)
+              ┌──────────────────────────┐
+              │   Base de Datos SAP ISU  │
+              └──────────────────────────┘
 ```
 
 ---
@@ -519,16 +604,50 @@ Gestión inteligente de ventana de contexto para conversaciones extensas:
 - **Eliminación inteligente**: Turnos más antiguos se eliminan primero
 - **Preservación de contexto**: Información crítica se mantiene
 
-### 3. Carga Dinámica de Documentos
+### 3. Streaming de Respuestas
+
+Visualización en tiempo real de las respuestas del LLM:
+
+- **Máquina de estados**: Procesamiento de bloques XML
+- **Indicadores visuales**: Herramientas en ejecución
+- **Limpieza automática**: Eliminación de markdown innecesario
+- **Experiencia fluida**: Respuestas progresivas
+
+### 4. Diagramas ASCII Profesionales
+
+El agente genera diagramas profesionales usando caracteres ASCII:
+
+**Caracteres disponibles**:
+- Cajas: `┌─┐ └─┘`
+- Líneas: `│ ─`
+- Conectores: `├─┤ ┬ ┴ ┼`
+- Flechas: `→ ← ↑ ↓ ▶ ◀ ▲ ▼`
+
+**Tipos de diagramas**:
+- Flujos secuenciales
+- Flujos con decisiones
+- Arquitecturas de capas
+- Componentes relacionados
+
+### 5. Gestión de Sesiones
+
+Soporte para múltiples sesiones de conversación:
+
+- **Persistencia**: Historial guardado entre sesiones
+- **Recuperación**: Continuar conversaciones anteriores
+- **Limpieza**: Eliminación automática de sesiones antiguas
+- **Aislamiento**: Cada sesión mantiene su propio contexto
+
+### 6. Carga Dinámica de Documentos
 
 Los resúmenes de documentos se cargan dinámicamente desde S3:
 
 - **Bucket S3**: `rag-system-darwin-eu-west-1`
 - **Actualización automática**: Al iniciar el agente
-- **Simplificación**: Solo campos esenciales (file_name, summary, topics, key_terms)
+- **Simplificación**: Solo campos esenciales
 - **Integración**: Marcador `{{DYNAMIC_SUMMARIES}}` en system prompt
 
-### 4. Logging Estructurado
+### 7. Logging Estructurado
 
 Registro completo de todas las interacciones:
 
@@ -537,29 +656,7 @@ Registro completo de todas las interacciones:
 - **Timestamps**: Marca temporal de cada interacción
 - **Métricas**: Tokens usados, tiempo de ejecución
 
-**Estructura de Logs**:
-```json
-{
-  "timestamp": "2025-10-28T19:00:00Z",
-  "session_id": "uuid-session",
-  "request": {
-    "user_input": "¿Cómo funciona OAuth?",
-    "system_prompt_hash": "abc123",
-    "conversation_history_length": 5
-  },
-  "response": {
-    "content": "OAuth es un protocolo...",
-    "tools_used": ["semantic_search"],
-    "tokens": {
-      "input": 1500,
-      "output": 800,
-      "total": 2300
-    }
-  }
-}
-```
-
-### 5. Diagnósticos de Red
+### 8. Diagnósticos de Red
 
 Herramientas para diagnosticar conectividad:
 
@@ -582,8 +679,13 @@ python3 src/utils/network_diagnostics.py
 ```
 AGENTE_CONSULTA_ITERATIVO/
 ├── config/
-│   ├── config.yaml                    # Configuración principal
-│   └── system_prompt_darwin.md        # System prompt con marcador dinámico
+│   ├── config_darwin.yaml             # Configuración Darwin
+│   ├── config_mulesoft.yaml           # Configuración MuleSoft
+│   ├── config_sap.yaml                # Configuración SAP
+│   ├── system_prompt_darwin.md        # System prompt Darwin
+│   ├── system_prompt_mulesoft.md      # System prompt MuleSoft
+│   ├── system_prompt_sap.md           # System prompt SAP
+│   └── web_crawler_config.yaml        # Configuración web crawler
 │
 ├── src/
 │   ├── agent/                         # Módulos del agente IA
@@ -599,15 +701,20 @@ AGENTE_CONSULTA_ITERATIVO/
 │   │   ├── config_manager.py          # Gestión de configuración
 │   │   ├── response_formatter.py      # Formateo de respuestas
 │   │   ├── s3_summaries_loader.py     # Carga dinámica desde S3
+│   │   ├── session_manager.py         # Gestión de sesiones
+│   │   ├── streaming_state_machine.py # Máquina de estados streaming
+│   │   ├── streaming_display.py       # Display de streaming
 │   │   ├── color_utils.py             # Utilidades de colores
 │   │   └── logs/                      # Logs de conversaciones
 │   │
 │   ├── tools/                         # Herramientas de búsqueda
 │   │   ├── __init__.py
-│   │   ├── semantic_search.py         # Búsqueda semántica
-│   │   ├── lexical_search.py          # Búsqueda léxica
-│   │   ├── regex_search.py            # Búsqueda por regex
-│   │   └── get_file_content.py        # Obtención de archivos
+│   │   ├── tool_semantic_search.py    # Búsqueda semántica
+│   │   ├── tool_lexical_search.py     # Búsqueda léxica
+│   │   ├── tool_regex_search.py       # Búsqueda por regex
+│   │   ├── tool_get_file_content.py   # Obtención de archivos
+│   │   ├── tool_web_crawler.py        # Web crawler (NUEVO)
+│   │   └── cache/                     # Cache de web crawler
 │   │
 │   ├── common/                        # Utilidades compartidas
 │   │   ├── __init__.py
@@ -617,6 +724,8 @@ AGENTE_CONSULTA_ITERATIVO/
 │   │   ├── __init__.py
 │   │   ├── network_diagnostics.py     # Diagnósticos de red
 │   │   ├── update_system_prompt.py    # Actualización de prompt
+│   │   ├── update_system_prompt_webcrawler.py  # Actualización web crawler
+│   │   ├── generate_system_prompt_example.py   # Generación de ejemplos
 │   │   └── process_summaries.py       # Procesamiento de resúmenes
 │   │
 │   └── ssh_tunnel/                    # Herramientas de tunelización
@@ -624,159 +733,4 @@ AGENTE_CONSULTA_ITERATIVO/
 │       ├── aws_tunnel.py              # Cliente de túnel SSH
 │       ├── setup_tunnel.sh            # Script de configuración
 │       ├── start_tunnel_background.sh # Túnel en background
-│       └── start_tunnel_direct.sh     # Túnel directo
-│
-├── docs/                              # Documentación técnica
-│   ├── README.md                      # Este archivo
-│   ├── README_AGENTE_IA_DESIGN.md     # Diseño arquitectónico
-│   ├── DEFINICION_4_HERRAMIENTAS_AGENTE_CONSULTA.md
-│   ├── DYNAMIC_SUMMARIES_IMPLEMENTATION.md
-│   ├── SLIDING_WINDOW_IMPLEMENTATION.md
-│   ├── LOGS_JSON_STRUCTURE.md
-│   └── [otros documentos técnicos]
-│
-├── requirements.txt                   # Dependencias Python
-├── .gitignore                        # Archivos ignorados por Git
-└── README.md                         # Este archivo
-```
-
----
-
-## 📚 Documentación Técnica
-
-### Documentos Disponibles
-
-1. **[README_AGENTE_IA_DESIGN.md](docs/README_AGENTE_IA_DESIGN.md)**: Diseño arquitectónico completo del agente
-2. **[DEFINICION_4_HERRAMIENTAS_AGENTE_CONSULTA.md](docs/DEFINICION_4_HERRAMIENTAS_AGENTE_CONSULTA.md)**: Especificación técnica de las 4 herramientas
-3. **[DYNAMIC_SUMMARIES_IMPLEMENTATION.md](docs/DYNAMIC_SUMMARIES_IMPLEMENTATION.md)**: Implementación de carga dinámica desde S3
-4. **[SLIDING_WINDOW_IMPLEMENTATION.md](docs/SLIDING_WINDOW_IMPLEMENTATION.md)**: Implementación de sliding window conversacional
-5. **[LOGS_JSON_STRUCTURE.md](docs/LOGS_JSON_STRUCTURE.md)**: Estructura de logs JSON
-6. **[SOLUCION_CONECTIVIDAD_AWS.md](docs/SOLUCION_CONECTIVIDAD_AWS.md)**: Soluciones de conectividad AWS
-
-### Tecnologías Utilizadas
-
-- **Python 3.9+**: Lenguaje principal
-- **AWS Bedrock**: Servicio de LLM (Claude Haiku)
-- **AWS S3**: Almacenamiento de documentos y resúmenes
-- **OpenSearch**: Motor de búsqueda y vectorial
-- **Amazon Titan**: Modelo de embeddings (1024 dimensiones)
-- **boto3**: SDK de AWS para Python
-- **opensearchpy**: Cliente de OpenSearch
-- **PyYAML**: Parsing de configuración
-
-### Infraestructura AWS
-
-- **Región**: eu-west-1 (Irlanda)
-- **OpenSearch**: VPC endpoint en red privada
-- **Bedrock**: Modelos Claude Haiku y Titan Embeddings
-- **S3 Bucket**: rag-system-darwin-eu-west-1
-- **Índice OpenSearch**: rag-documents-darwin
-
----
-
-## 🔧 Mantenimiento y Desarrollo
-
-### Actualizar System Prompt
-
-```bash
-# Si necesitas actualizar el system prompt con nuevos documentos
-python3 src/utils/update_system_prompt.py
-```
-
-### Procesar Nuevos Resúmenes
-
-```bash
-# Procesar archivos JSON de resúmenes
-python3 src/utils/process_summaries.py
-```
-
-### Ejecutar Tests
-
-```bash
-# Tests de componentes core
-python3 src/agent/test_core_components.py
-
-# Tests de colores
-python3 src/agent/test_colors.py
-
-# Tests de logging
-python3 src/agent/test_llm_logging.py
-```
-
-### Diagnósticos
-
-```bash
-# Diagnóstico completo de conectividad
-python3 src/utils/network_diagnostics.py
-
-# Test de búsqueda léxica
-python3 test_lexical_from_agent.py
-```
-
----
-
-## 🤝 Contribución
-
-Para contribuir al proyecto:
-
-1. Fork el repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
----
-
-## 📝 Licencia
-
-Este proyecto es propiedad de [Tu Organización]. Todos los derechos reservados.
-
----
-
-## 👥 Autores
-
-- **Equipo Darwin** - Desarrollo y mantenimiento
-
----
-
-## 📞 Soporte
-
-Para soporte técnico o preguntas:
-- Consulta la documentación en `docs/`
-- Revisa los logs en `src/agent/logs/`
-- Ejecuta diagnósticos con `network_diagnostics.py`
-
----
-
-## 🔄 Changelog
-
-### Versión 1.1.0 (Octubre 2025)
-- ✅ **Mejoras en la interfaz de usuario**:
-  - Cambio de "Pensando..." a "Reflexionando..." para mejor UX
-  - Alineación perfecta del cuadro de bienvenida (64 caracteres)
-  - Eliminación de mensajes duplicados al inicio
-  - Supresión de warnings de SSL de OpenSearch
-- ✅ **Streaming mejorado**:
-  - Visualización en tiempo real de respuestas del LLM
-  - Máquina de estados para procesamiento de bloques XML
-  - Indicadores visuales de ejecución de herramientas
-- ✅ **Soporte multi-aplicación**:
-  - Configuración para Darwin, SAP y MuleSoft
-  - System prompts específicos por aplicación
-  - Gestión dinámica de configuración
-
-### Versión 1.0.0 (Octubre 2025)
-- ✅ Implementación completa del agente conversacional
-- ✅ 4 herramientas de búsqueda integradas
-- ✅ Prompt caching con optimización de tokens
-- ✅ Sliding window conversacional
-- ✅ Carga dinámica de documentos desde S3
-- ✅ Logging estructurado en JSON
-- ✅ Diagnósticos de red y conectividad
-- ✅ Soporte para túneles SSH
-
----
-
-**Última actualización**: 29 de Octubre 2025  
-**Versión**: 1.1.0  
-**Estado**: Producción
+│       └── start_tunnel_direct.sh     #

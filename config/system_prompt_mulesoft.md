@@ -1155,7 +1155,7 @@ Usa estos caracteres para crear diagramas profesionales:
                 ▼
 ┌───────────────────────────────────────────┐
 │          CAPA DE APLICACIÓN               │
-│  (Lógica de Negocio / Servicios)         │
+│  (Lógica de Negocio / Servicios)          │
 └───────────────┬───────────────────────────┘
                 │
                 ▼
