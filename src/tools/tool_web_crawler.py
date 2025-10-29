@@ -339,8 +339,18 @@ class WebCrawlerTool:
                 )
             
             # Realizar búsqueda
-            # En duckduckgo-search 3.8.0, DDGS() no acepta parámetros
-            ddgs = DDGS()
+            # En duckduckgo-search 3.8.0+, DDGS() puede tener diferentes firmas
+            # Intentar crear instancia sin parámetros
+            try:
+                ddgs = DDGS()
+            except TypeError as e:
+                self.logger.error(f"Error creando instancia DDGS: {e}")
+                # Algunas versiones pueden requerir parámetros específicos
+                try:
+                    ddgs = DDGS(timeout=20)
+                except:
+                    self.logger.error("No se pudo crear instancia de DDGS")
+                    return []
             
             # text() devuelve un generador y acepta parámetros de búsqueda
             results = []
