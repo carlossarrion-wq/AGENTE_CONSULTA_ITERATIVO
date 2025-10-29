@@ -340,7 +340,16 @@ class WebCrawlerTool:
             
             # Realizar búsqueda
             ddgs = DDGS()
-            results = list(ddgs.text(query, max_results=10))
+            # En duckduckgo-search 3.8.0, text() devuelve un generador
+            # y no acepta max_results como parámetro directo
+            results = []
+            try:
+                for result in ddgs.text(query, region='wt-wt', safesearch='moderate', timelimit=None):
+                    results.append(result)
+                    if len(results) >= 10:
+                        break
+            except StopIteration:
+                pass
             
             if not results:
                 self.logger.warning(f"DuckDuckGo no devolvió resultados para: {query}")
