@@ -397,10 +397,15 @@ class WebCrawlerTool:
         return None
     
     def _extract_with_trafilatura(self, url: str) -> Dict[str, Any]:
-        """Extrae contenido con Trafilatura"""
+        """Extrae contenido con Trafilatura (opcional)"""
         try:
-            import trafilatura
-            from trafilatura.settings import use_config
+            # Trafilatura es opcional - puede no estar instalado
+            try:
+                import trafilatura
+                from trafilatura.settings import use_config
+            except ImportError:
+                self.logger.debug("Trafilatura no está instalado, usando BeautifulSoup")
+                return None
             
             # Configurar trafilatura con límite de redirecciones
             config = use_config()
