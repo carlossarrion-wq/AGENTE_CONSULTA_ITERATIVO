@@ -115,6 +115,9 @@ class GetFileContent:
     
     def _get_all_chunks(self, file_path: str) -> List[Dict]:
         """Obtiene todos los chunks de un archivo usando scroll"""
+        # Normalizar el nombre del archivo (eliminar espacios extras)
+        normalized_path = ' '.join(file_path.split())
+        
         # Intentar múltiples estrategias de búsqueda
         search_strategies = [
             # Estrategia 1: Búsqueda exacta con keyword
@@ -123,22 +126,48 @@ class GetFileContent:
                     "file_name.keyword": file_path
                 }
             },
-            # Estrategia 2: Búsqueda exacta sin keyword
+            # Estrategia 2: Búsqueda exacta normalizada con keyword
+            {
+                "term": {
+                    "file_name.keyword": normalized_path
+                }
+            },
+            # Estrategia 3: Búsqueda exacta sin keyword
             {
                 "term": {
                     "file_name": file_path
                 }
             },
-            # Estrategia 3: Búsqueda con match (más flexible)
+            # Estrategia 4: Búsqueda con match (más flexible, ignora espacios extras)
             {
                 "match": {
-                    "file_name": file_path
+                    "file_name": {
+                        "query": file_path,
+                        "operator": "and"
+                    }
                 }
             },
-            # Estrategia 4: Búsqueda con match_phrase (frase exacta)
+            # Estrategia 5: Búsqueda con match_phrase (frase exacta)
             {
                 "match_phrase": {
                     "file_name": file_path
+                }
+            },
+            # Estrategia 6: Búsqueda fuzzy para manejar variaciones
+            {
+                "match": {
+                    "file_name": {
+                        "query": file_path,
+                        "fuzziness": "AUTO"
+                    }
+                }
+            },
+            # Estrategia 7: Wildcard para manejar espacios variables
+            {
+                "wildcard": {
+                    "file_name.keyword": {
+                        "value": f"*{file_path.replace(' ', '*')}*"
+                    }
                 }
             }
         ]

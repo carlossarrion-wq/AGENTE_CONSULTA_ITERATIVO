@@ -17,6 +17,10 @@ import warnings
 # Suprimir warnings de SSL de opensearchpy
 warnings.filterwarnings('ignore', message='Connecting to .* using SSL with verify_certs=False is insecure.')
 
+# Suprimir warnings de deprecación de Python de boto3
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='boto3')
+warnings.filterwarnings('ignore', message='Boto3 will no longer support Python.*')
+
 class Config:
     """Clase para manejar la configuración desde el archivo YAML"""
     
