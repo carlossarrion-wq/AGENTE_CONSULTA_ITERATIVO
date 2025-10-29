@@ -31,16 +31,18 @@ from color_utils import (
 class ChatInterface:
     """Interfaz de chat para interacción con el agente"""
     
-    def __init__(self, config_path: str = "config/config.yaml", enable_streaming: bool = True):
+    def __init__(self, config_path: str = "config/config_darwin.yaml", app_name: str = "Darwin", enable_streaming: bool = True):
         """
         Inicializa la interfaz de chat
         
         Args:
             config_path: Ruta al archivo de configuración
+            app_name: Nombre de la aplicación (Darwin, SAP, MuleSoft, etc.)
             enable_streaming: Si debe usar streaming para respuestas del LLM
         """
         self.logger = logging.getLogger(__name__)
         self.config_path = config_path
+        self.app_name = app_name
         self.enable_streaming = enable_streaming
         
         # Cargar configuración
@@ -78,13 +80,13 @@ class ChatInterface:
     
     def _display_welcome_message(self) -> None:
         """Muestra mensaje de bienvenida"""
-        welcome = """
+        welcome = f"""
 ╔════════════════════════════════════════════════════════════════╗
 ║                                                                ║
-║        AGENTE IA DE CONSULTA - BASE DE CONOCIMIENTO DARWIN     ║
+║        AGENTE IA DE CONSULTA - {self.app_name.upper():^30}     ║
 ║                                                                ║
 ║  Bienvenido al asistente especializado en consultas sobre      ║
-║  la base de conocimiento Darwin.                               ║
+║  la base de conocimiento {self.app_name:<35} ║
 ║                                                                ║
 ║  Puedo ayudarte con:                                           ║
 ║  • Consultas funcionales sobre el sistema                      ║
@@ -101,10 +103,10 @@ class ChatInterface:
     
     def _display_goodbye_message(self) -> None:
         """Muestra mensaje de despedida"""
-        goodbye = """
+        goodbye = f"""
 ╔════════════════════════════════════════════════════════════════╗
 ║                                                                ║
-║  ¡Gracias por usar el Agente IA de Consulta Darwin!            ║
+║  ¡Gracias por usar el Agente IA de Consulta {self.app_name}!{' '*(18-len(self.app_name))}║
 ║                                                                ║
 ║  Sesión finalizada correctamente.                              ║
 ║                                                                ║
