@@ -503,6 +503,8 @@ class WebCrawlerTool:
                 self.logger.warning(f"Contenido sospechosamente corto: {url}")
                 return None
             
+            # Usar html.parser (nativo de Python) en lugar de lxml
+            # lxml es opcional y puede causar problemas de compilación en algunos sistemas
             soup = BeautifulSoup(response.content, 'html.parser')
             
             # Remover scripts y estilos
