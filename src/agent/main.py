@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agent.chat_interface import ChatInterface
+from agent.session_manager import SessionManager
 
 
 # Aplicaciones soportadas y sus configuraciones
@@ -82,9 +83,9 @@ Aplicaciones soportadas:
 {chr(10).join(f"  {app}: {info['description']}" for app, info in SUPPORTED_APPS.items())}
 
 Ejemplos:
-  python3 src/agent/main.py --app darwin
-  python3 src/agent/main.py --app sap
-  python3 src/agent/main.py --app mulesoft
+  python3 src/agent/main.py --app darwin --username darwin_001
+  python3 src/agent/main.py --app sap --username sap_user_01
+  python3 src/agent/main.py --app mulesoft --username mulesoft_admin
         """
     )
     
@@ -94,6 +95,13 @@ Ejemplos:
         choices=list(SUPPORTED_APPS.keys()),
         default='darwin',
         help='Aplicación a consultar (default: darwin)'
+    )
+    
+    parser.add_argument(
+        '--username',
+        type=str,
+        required=True,
+        help='Nombre de usuario para autenticación (requerido)'
     )
     
     parser.add_argument(
@@ -161,6 +169,7 @@ def main():
     logger.info(f"Iniciando Agente IA de Consulta - {app_name}")
     logger.info("="*64)
     logger.info(f"Aplicación: {args.app}")
+    logger.info(f"Usuario: {args.username}")
     logger.info(f"Configuración: {config_file}")
     logger.info(f"System Prompt: {system_prompt}")
     
@@ -170,10 +179,17 @@ def main():
         sys.exit(1)
     
     try:
+        # Crear gestor de sesiones
+        session_manager = SessionManager()
+        
+        # Crear sesión de usuario
+        session = session_manager.create_session(args.username, app_name)
+        
         # Crear interfaz de chat con configuración específica de la aplicación
         chat = ChatInterface(
             config_path=config_file,
-            app_name=app_name
+            app_name=app_name,
+            session_manager=session_manager
         )
         
         # Ejecutar en modo interactivo

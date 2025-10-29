@@ -55,6 +55,7 @@ class StreamingStateMachine:
             '<tool_lexical_search>': StreamState.IN_TOOL,
             '<tool_regex_search>': StreamState.IN_TOOL,
             '<tool_get_file_content>': StreamState.IN_TOOL,
+            '<tool_web_crawler>': StreamState.IN_TOOL,
             '<answer>': StreamState.IN_METADATA,
             '<sources>': StreamState.IN_METADATA,
             '<confidence>': StreamState.IN_METADATA,
@@ -69,7 +70,8 @@ class StreamingStateMachine:
                 '</tool_semantic_search>',
                 '</tool_lexical_search>',
                 '</tool_regex_search>',
-                '</tool_get_file_content>'
+                '</tool_get_file_content>',
+                '</tool_web_crawler>'
             ],
             StreamState.IN_METADATA: [
                 '</answer>',
@@ -128,9 +130,18 @@ class StreamingStateMachine:
                 before_tag = self.buffer.split(tag)[0]
                 after_tag = self.buffer.split(tag, 1)[1]
                 
+                # Limpiar marcadores de código markdown antes del tag
+                before_tag_clean = before_tag.rstrip()
+                if before_tag_clean.endswith('```xml'):
+                    before_tag_clean = before_tag_clean[:-6].rstrip()
+                elif before_tag_clean.endswith('```'):
+                    before_tag_clean = before_tag_clean[:-3].rstrip()
+                elif before_tag_clean.endswith('xml'):
+                    before_tag_clean = before_tag_clean[:-3].rstrip()
+                
                 # Liberar texto antes del tag (si hay)
-                if before_tag.strip():
-                    self.display.stream_plain_text(before_tag)
+                if before_tag_clean.strip():
+                    self.display.stream_plain_text(before_tag_clean)
                 
                 # Cambiar de estado
                 old_state = self.state
@@ -159,14 +170,33 @@ class StreamingStateMachine:
                 to_release = self.buffer[:last_bracket]
                 self.buffer = self.buffer[last_bracket:]
                 
-                if to_release.strip():
-                    self.display.stream_plain_text(to_release)
-                    self.logger.debug(f"Liberado texto plano (buffer grande): {len(to_release)} chars")
+                # Limpiar marcadores de código markdown del texto a liberar
+                to_release_clean = to_release.rstrip()
+                if to_release_clean.endswith('```xml'):
+                    to_release_clean = to_release_clean[:-6].rstrip()
+                elif to_release_clean.endswith('```'):
+                    to_release_clean = to_release_clean[:-3].rstrip()
+                elif to_release_clean.endswith('xml'):
+                    to_release_clean = to_release_clean[:-3].rstrip()
+                
+                if to_release_clean.strip():
+                    self.display.stream_plain_text(to_release_clean)
+                    self.logger.debug(f"Liberado texto plano (buffer grande): {len(to_release_clean)} chars")
         else:
             # No hay '<', liberar todo el buffer
             if self.buffer.strip():
-                self.display.stream_plain_text(self.buffer)
-                self.logger.debug(f"Liberado texto plano: {len(self.buffer)} chars")
+                # Limpiar marcadores de código markdown
+                buffer_clean = self.buffer.rstrip()
+                if buffer_clean.endswith('```xml'):
+                    buffer_clean = buffer_clean[:-6].rstrip()
+                elif buffer_clean.endswith('```'):
+                    buffer_clean = buffer_clean[:-3].rstrip()
+                elif buffer_clean.endswith('xml'):
+                    buffer_clean = buffer_clean[:-3].rstrip()
+                
+                if buffer_clean.strip():
+                    self.display.stream_plain_text(buffer_clean)
+                    self.logger.debug(f"Liberado texto plano: {len(buffer_clean)} chars")
             self.buffer = ""
     
     def _process_thinking_state(self) -> None:

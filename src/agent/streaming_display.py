@@ -48,7 +48,8 @@ class StreamingDisplay:
             'tool_semantic_search': '🔍 Realizando búsqueda semántica...',
             'tool_lexical_search': '📝 Realizando búsqueda léxica...',
             'tool_regex_search': '🔎 Buscando patrones con regex...',
-            'tool_get_file_content': '📄 Obteniendo contenido del archivo...'
+            'tool_get_file_content': '📄 Obteniendo contenido del archivo...',
+            'tool_web_crawler': '🌐 Buscando información en internet...'
         }
         
         self.logger.debug("StreamingDisplay inicializado")
@@ -85,14 +86,14 @@ class StreamingDisplay:
         if self.is_paused:
             return
         
-        # Construir mensaje en formato compacto
+        # Construir mensaje en formato compacto sin comillas
         if params:
             params_str = self._format_tool_params_compact(params)
             message = f"🔧 Ejecutando {tool_name} ({params_str})"
         else:
             message = f"🔧 Ejecutando {tool_name}"
         
-        # Mostrar con color
+        # Mostrar con color (sin bloque de código)
         colored_message = tool_invocation(message) if self.enable_colors else message
         print(f"\n{colored_message}", flush=True)
         
@@ -115,19 +116,19 @@ class StreamingDisplay:
         first_param = True
         for key, value in params.items():
             if first_param and key == 'query':
-                # Primer parámetro (query) sin nombre de clave
+                # Primer parámetro (query) sin nombre de clave y sin comillas
                 if isinstance(value, str):
                     if len(value) > 50:
-                        formatted_parts.append(f'"{value[:50]}..."')
+                        formatted_parts.append(f'{value[:50]}...')
                     else:
-                        formatted_parts.append(f'"{value}"')
+                        formatted_parts.append(value)
                 first_param = False
             else:
-                # Resto de parámetros con nombre de clave
+                # Resto de parámetros con nombre de clave pero sin comillas
                 if isinstance(value, str) and len(value) > 50:
-                    value_str = f'"{value[:50]}..."'
+                    value_str = f'{value[:50]}...'
                 elif isinstance(value, str):
-                    value_str = f'"{value}"'
+                    value_str = value
                 elif isinstance(value, list):
                     value_str = str(value)
                 else:

@@ -27,6 +27,7 @@ from tools.tool_semantic_search import SemanticSearch
 from tools.tool_lexical_search import LexicalSearch
 from tools.tool_regex_search import RegexSearch
 from tools.tool_get_file_content import GetFileContent
+from tools.tool_web_crawler import execute_web_crawler
 from agent.color_utils import tool_result as color_tool_result
 
 
@@ -36,6 +37,7 @@ class ToolType(Enum):
     LEXICAL_SEARCH = "lexical_search"
     REGEX_SEARCH = "regex_search"
     GET_FILE_CONTENT = "get_file_content"
+    WEB_CRAWLER = "web_crawler"
 
 
 @dataclass
@@ -72,14 +74,16 @@ class ConsolidatedResults:
 class ToolExecutor:
     """Ejecutor de herramientas de búsqueda"""
     
-    def __init__(self, config_path: str = "config/config.yaml"):
+    def __init__(self, config_path: str = "config/config.yaml", app_name: str = "mulesoft"):
         """
         Inicializa el ejecutor de herramientas
         
         Args:
             config_path: Ruta al archivo de configuración
+            app_name: Nombre de la aplicación (mulesoft, darwin, sap)
         """
         self.config_path = config_path
+        self.app_name = app_name
         self.logger = logging.getLogger(__name__)
         
         # Inicializar herramientas
@@ -118,6 +122,7 @@ class ToolExecutor:
             ToolType.LEXICAL_SEARCH: r'<tool_lexical_search>(.*?)</tool_lexical_search>',
             ToolType.REGEX_SEARCH: r'<tool_regex_search>(.*?)</tool_regex_search>',
             ToolType.GET_FILE_CONTENT: r'<tool_get_file_content>(.*?)</tool_get_file_content>',
+            ToolType.WEB_CRAWLER: r'<tool_web_crawler>(.*?)</tool_web_crawler>',
         }
         
         for tool_type, pattern in patterns.items():
@@ -216,6 +221,18 @@ class ToolExecutor:
             elif tool_type == ToolType.GET_FILE_CONTENT:
                 result = self.get_file_content.get_content(**params)
             
+            elif tool_type == ToolType.WEB_CRAWLER:
+                # Inyectar app_name en los parámetros si no está presente
+                if 'app_name' not in params:
+                    params['app_name'] = self.app_name
+                
+                # Ejecutar web crawler
+                crawler_result = execute_web_crawler(params)
+                if crawler_result.success:
+                    result = crawler_result.data
+                else:
+                    raise Exception(crawler_result.error)
+            
             else:
                 raise ValueError(f"Tipo de herramienta desconocido: {tool_type}")
             
@@ -310,6 +327,23 @@ class ToolExecutor:
             
             return formatted
         
+        elif tool_type == ToolType.WEB_CRAWLER:
+            sources = result.get('sources', [])
+            query = result.get('query', 'N/A')
+            total = len(sources)
+            formatted = f"Query: {query}\n"
+            formatted += f"Total de fuentes web encontradas: {total}\n"
+            
+            if total > 0:
+                formatted += "\nFuentes extraídas:\n"
+                for i, source in enumerate(sources, 1):
+                    formatted += f"\n{i}. URL: {source.get('url', 'N/A')}\n"
+                    formatted += f"   Método: {source.get('extraction_method', 'N/A')}\n"
+                    content = source.get('content', '')[:200]
+                    formatted += f"   Contenido: {content}...\n"
+            
+            return formatted
+        
         else:
             return json.dumps(result, indent=2, ensure_ascii=False)[:500] + "..."
     
@@ -373,10 +407,12 @@ class ToolExecutor:
             'all_fragments': [],
             'all_matches': [],
             'file_contents': {},
+            'web_sources': [],
             'summary': {
                 'total_results': 0,
                 'total_files': set(),
-                'search_types': set()
+                'search_types': set(),
+                'web_sources_count': 0
             }
         }
         
@@ -415,6 +451,20 @@ class ToolExecutor:
             if 'content' in data and 'file_path' in data:
                 consolidated['file_contents'][data['file_path']] = data['content']
                 consolidated['summary']['total_files'].add(data['file_path'])
+            
+            # Consolidar resultados de web_crawler
+            if 'sources' in data and tool_type == 'web_crawler':
+                consolidated['web_sources'].extend(data['sources'])
+                consolidated['summary']['web_sources_count'] += len(data['sources'])
+                consolidated['summary']['total_results'] += len(data['sources'])
+                consolidated['summary']['search_types'].add('web_crawler')
+            
+            # Consolidar URLs recomendadas de web_crawler (nueva estrategia)
+            if 'recommended_urls' in data and tool_type == 'web_crawler':
+                consolidated['web_sources'].extend(data['recommended_urls'])
+                consolidated['summary']['web_sources_count'] += len(data['recommended_urls'])
+                consolidated['summary']['total_results'] += len(data['recommended_urls'])
+                consolidated['summary']['search_types'].add('web_crawler')
             
             # Registrar tipo de búsqueda
             if 'search_type' in data:

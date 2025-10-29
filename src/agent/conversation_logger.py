@@ -13,21 +13,26 @@ import os
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 from pathlib import Path
+
+if TYPE_CHECKING:
+    from session_manager import SessionManager
 
 
 class ConversationLogger:
     """Logger para registrar conversaciones completas"""
     
-    def __init__(self, logs_dir: str = "logs"):
+    def __init__(self, logs_dir: str = "logs", session_manager: Optional['SessionManager'] = None):
         """
         Inicializa el logger de conversaciones
         
         Args:
             logs_dir: Directorio donde guardar los logs
+            session_manager: Gestor de sesiones (opcional)
         """
         self.logs_dir = logs_dir
+        self.session_manager = session_manager
         self.logger = logging.getLogger(__name__)
         
         # Crear directorio de logs si no existe
@@ -38,9 +43,28 @@ class ConversationLogger:
         try:
             Path(self.logs_dir).mkdir(parents=True, exist_ok=True)
             self.logger.info(f"Directorio de logs verificado: {self.logs_dir}")
+            
+            # Si hay session_manager, también crear sus directorios
+            if self.session_manager:
+                Path(self.logs_dir, "sessions").mkdir(exist_ok=True)
+                Path(self.logs_dir, "conversations").mkdir(exist_ok=True)
         except Exception as e:
             self.logger.error(f"Error creando directorio de logs: {e}")
             raise
+    
+    def get_log_path(self) -> str:
+        """
+        Obtiene la ruta del archivo de log actual
+        
+        Returns:
+            String con la ruta del archivo de log
+        """
+        if self.session_manager:
+            log_path = self.session_manager.get_conversation_log_path()
+            if log_path:
+                return str(log_path)
+        
+        return f"{self.logs_dir}/conversation_default.json"
     
     def log_conversation_turn(
         self,
@@ -64,10 +88,22 @@ class ConversationLogger:
             Ruta del archivo de log creado
         """
         try:
-            # Crear nombre de archivo con timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-            filename = f"conversation_{session_id}_{timestamp}.json"
-            filepath = os.path.join(self.logs_dir, filename)
+            # Determinar ruta del archivo
+            if self.session_manager:
+                # Usar ruta específica de la sesión
+                log_path = self.session_manager.get_conversation_log_path()
+                if log_path:
+                    filepath = str(log_path)
+                else:
+                    # Fallback si no hay sesión activa
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+                    filename = f"conversation_{session_id}_{timestamp}.json"
+                    filepath = os.path.join(self.logs_dir, filename)
+            else:
+                # Modo legacy: crear archivo con timestamp
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+                filename = f"conversation_{session_id}_{timestamp}.json"
+                filepath = os.path.join(self.logs_dir, filename)
             
             # Preparar datos del turno
             turn_data = {
@@ -79,9 +115,28 @@ class ConversationLogger:
                 "request_metadata": request_metadata or {}
             }
             
-            # Escribir a archivo JSON
+            # Si el archivo ya existe, cargar turnos anteriores
+            turns = []
+            if os.path.exists(filepath):
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        existing_data = json.load(f)
+                        if isinstance(existing_data, list):
+                            turns = existing_data
+                        elif isinstance(existing_data, dict) and 'turns' in existing_data:
+                            turns = existing_data['turns']
+                        else:
+                            # Convertir formato antiguo a lista
+                            turns = [existing_data]
+                except Exception as e:
+                    self.logger.warning(f"Error leyendo archivo existente: {e}")
+            
+            # Agregar nuevo turno
+            turns.append(turn_data)
+            
+            # Escribir todos los turnos al archivo
             with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(turn_data, f, indent=2, ensure_ascii=False)
+                json.dump(turns, f, indent=2, ensure_ascii=False)
             
             self.logger.info(f"Turno de conversación registrado: {filepath}")
             return filepath

@@ -22,6 +22,7 @@ from tool_executor import ToolExecutor
 from streaming_state_machine import StreamingStateMachine
 from streaming_display import StreamingDisplay
 from config_manager import ConfigManager
+from session_manager import SessionManager
 from color_utils import (
     user_text, llm_response, tool_result, info, warning, error, success,
     header, dim_text, format_user_input_section, format_metrics_section
@@ -31,7 +32,7 @@ from color_utils import (
 class ChatInterface:
     """Interfaz de chat para interacción con el agente"""
     
-    def __init__(self, config_path: str = "config/config_darwin.yaml", app_name: str = "Darwin", enable_streaming: bool = True):
+    def __init__(self, config_path: str = "config/config_darwin.yaml", app_name: str = "Darwin", enable_streaming: bool = True, session_manager: Optional[SessionManager] = None):
         """
         Inicializa la interfaz de chat
         
@@ -39,6 +40,7 @@ class ChatInterface:
             config_path: Ruta al archivo de configuración
             app_name: Nombre de la aplicación (Darwin, SAP, MuleSoft, etc.)
             enable_streaming: Si debe usar streaming para respuestas del LLM
+            session_manager: Gestor de sesiones (opcional, se crea uno nuevo si no se proporciona)
         """
         self.logger = logging.getLogger(__name__)
         self.config_path = config_path
@@ -51,21 +53,35 @@ class ChatInterface:
         # Inicializar manejador de requests (sin pasar system_prompt, se cargará desde configuración)
         self.request_handler = RequestHandler(config_path=config_path)
         
-        # Inicializar logger de conversaciones
-        self.conversation_logger = ConversationLogger(logs_dir="logs")
+        # Gestor de sesiones
+        self.session_manager = session_manager or SessionManager()
+        
+        # Obtener sesión actual del gestor
+        current_session = self.session_manager.get_current_session()
+        if current_session:
+            self.session_id = current_session.session_id
+            self.logger.info(f"Usando sesión existente: {self.session_id}")
+        else:
+            # Fallback: crear sesión temporal si no hay una activa
+            self.session_id = str(uuid.uuid4())
+            self.logger.warning(f"No hay sesión activa, usando ID temporal: {self.session_id}")
+        
+        # Inicializar logger de conversaciones con gestor de sesiones
+        self.conversation_logger = ConversationLogger(
+            logs_dir="logs",
+            session_manager=self.session_manager
+        )
         
         # Inicializar componentes de streaming
         if enable_streaming:
             self.llm_comm = LLMCommunication(config_path=config_path)
-            self.tool_executor = ToolExecutor(config_path=config_path)
+            self.tool_executor = ToolExecutor(config_path=config_path, app_name=app_name.lower())
             self.logger.info("Streaming habilitado")
         
-        # Sesión actual
-        self.session_id = str(uuid.uuid4())
         self.is_active = False
         
         self.logger.info(f"ChatInterface inicializado con sesión {self.session_id}")
-        self.logger.info(f"Logs de conversación se guardarán en: logs/")
+        self.logger.info(f"Logs de conversación se guardarán en: {self.conversation_logger.get_log_path()}")
     
     def start(self) -> None:
         """Inicia la interfaz de chat"""
@@ -76,6 +92,10 @@ class ChatInterface:
         """Detiene la interfaz de chat"""
         self.is_active = False
         self.request_handler.end_session(self.session_id)
+        
+        # Finalizar sesión en el gestor
+        self.session_manager.end_session()
+        
         self._display_goodbye_message()
     
     def _display_welcome_message(self) -> None:
@@ -592,6 +612,9 @@ class ChatInterface:
                     
                     if not user_input:
                         continue
+                    
+                    # Actualizar actividad de sesión
+                    self.session_manager.update_session_activity()
                     
                     # Procesar input con o sin streaming
                     if self.enable_streaming:

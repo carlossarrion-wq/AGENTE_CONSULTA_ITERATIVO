@@ -29,6 +29,36 @@ from color_utils import (
 )
 
 
+def generate_web_crawler_documentation(app_name: str) -> str:
+    """
+    Genera la documentación de la herramienta web crawler dinámicamente
+    
+    Args:
+        app_name: Nombre de la aplicación (mulesoft, darwin, sap)
+        
+    Returns:
+        String con la documentación formateada o string vacío si está deshabilitada
+    """
+    try:
+        from pathlib import Path
+        
+        # Cargar el contenido del archivo de documentación
+        doc_path = Path("config/web_crawler_tool_section.md")
+        if not doc_path.exists():
+            logging.getLogger(__name__).warning(f"Archivo de documentación no encontrado: {doc_path}")
+            return ""
+        
+        with open(doc_path, 'r', encoding='utf-8') as f:
+            documentation = f.read()
+        
+        logging.getLogger(__name__).info(f"✅ Documentación de web crawler cargada desde {doc_path}")
+        return documentation
+        
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Error generando documentación web crawler: {e}")
+        return ""
+
+
 @dataclass
 class LLMRequest:
     """Estructura de un request al LLM"""
@@ -144,6 +174,25 @@ class LLMCommunication:
                 # Si no hay marcador, usar el prompt tal cual
                 prompt = prompt_template
                 self.logger.warning("⚠️  No se encontró el marcador {{DYNAMIC_SUMMARIES}} en el system prompt")
+            
+            # Buscar el marcador {{WEB_CRAWLER_TOOL}} y reemplazarlo con la documentación del web crawler
+            if "{{WEB_CRAWLER_TOOL}}" in prompt:
+                self.logger.info("🌐 Cargando documentación de web crawler dinámicamente...")
+                # Extraer el nombre de la app desde el nombre del archivo
+                app_name = "darwin"  # Default
+                if "mulesoft" in system_prompt_file.lower():
+                    app_name = "mulesoft"
+                elif "sap" in system_prompt_file.lower():
+                    app_name = "sap"
+                
+                web_crawler_doc = generate_web_crawler_documentation(app_name)
+                if web_crawler_doc:
+                    prompt = prompt.replace("{{WEB_CRAWLER_TOOL}}", web_crawler_doc)
+                    self.logger.info(f"✅ Documentación de web crawler cargada para {app_name}")
+                else:
+                    # Si está deshabilitada, remover el marcador
+                    prompt = prompt.replace("{{WEB_CRAWLER_TOOL}}", "")
+                    self.logger.info(f"ℹ️  Web crawler deshabilitado para {app_name}")
             
             self.logger.info(f"✅ System prompt cargado desde archivo: {system_prompt_file}")
             self.logger.info(f"   Tamaño: {len(prompt)} caracteres")

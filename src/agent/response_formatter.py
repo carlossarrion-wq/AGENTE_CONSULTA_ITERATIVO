@@ -49,18 +49,20 @@ class ResponseFormatter:
         
         # Patrones de herramientas a filtrar
         self.tool_patterns = {
-            'semantic_search': r'<semantic_search>.*?</semantic_search>',
-            'lexical_search': r'<lexical_search>.*?</lexical_search>',
-            'regex_search': r'<regex_search>.*?</regex_search>',
-            'get_file_content': r'<get_file_content>.*?</get_file_content>',
+            'tool_semantic_search': r'<tool_semantic_search>.*?</tool_semantic_search>',
+            'tool_lexical_search': r'<tool_lexical_search>.*?</tool_lexical_search>',
+            'tool_regex_search': r'<tool_regex_search>.*?</tool_regex_search>',
+            'tool_get_file_content': r'<tool_get_file_content>.*?</tool_get_file_content>',
+            'tool_web_crawler': r'<tool_web_crawler>.*?</tool_web_crawler>',
         }
         
         # Traducciones de herramientas para streaming
         self.tool_translations = {
-            'semantic_search': 'Realizando búsqueda semántica...',
-            'lexical_search': 'Realizando búsqueda léxica...',
-            'regex_search': 'Realizando búsqueda por patrones...',
-            'get_file_content': 'Obteniendo contenido del archivo...',
+            'tool_semantic_search': 'Realizando búsqueda semántica...',
+            'tool_lexical_search': 'Realizando búsqueda léxica...',
+            'tool_regex_search': 'Realizando búsqueda por patrones...',
+            'tool_get_file_content': 'Obteniendo contenido del archivo...',
+            'tool_web_crawler': 'Buscando información en internet...',
         }
     
     def extract_tool_calls(self, content: str) -> List[Dict[str, Any]]:
@@ -366,10 +368,10 @@ def main():
     llm_response = """
     Voy a buscar información sobre autenticación en el sistema Darwin.
     
-    <semantic_search>
+    <tool_semantic_search>
     <query>autenticación usuarios login</query>
     <top_k>5</top_k>
-    </semantic_search>
+    </tool_semantic_search>
     
     Basándome en la búsqueda, aquí está la información:
     
@@ -381,9 +383,9 @@ def main():
     2. **Generación de tokens**: Se generan JWT tokens para sesiones
     3. **Protección de rutas**: Middleware valida tokens en cada request
     
-    <lexical_search>
+    <tool_lexical_search>
     <query>validateToken authenticateUser</query>
-    </lexical_search>
+    </tool_lexical_search>
     
     Para más detalles, consulta la documentación técnica.
     """

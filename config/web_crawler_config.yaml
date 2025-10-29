@@ -1,0 +1,111 @@
+# Configuración del Web Crawler por Aplicación
+
+# Configuración global
+global:
+  cache_ttl_hours: 24
+  max_results_per_search: 3
+  max_content_length: 2000
+  min_delay_seconds: 3.0
+  request_timeout_seconds: 15
+
+# Configuración específica por aplicación
+darwin:
+  enabled: true
+  allowed_domains:
+    - docs.darwin.com
+    - support.darwin.com
+    - community.darwin.com
+    - stackoverflow.com
+  required_keywords:
+    - darwin
+    - contrato
+    - cliente
+    - gestión
+  forbidden_keywords:
+    - porn
+    - xxx
+    - adult
+    - casino
+    - gambling
+    - torrent
+    - pirate
+    - crack
+    - hack
+  max_daily_searches: 20
+  rate_limit:
+    min_delay_seconds: 3.0
+    max_requests_per_minute: 10
+
+mulesoft:
+  enabled: true
+  allowed_domains:
+    - docs.mulesoft.com
+    - help.mulesoft.com
+    - blogs.mulesoft.com
+    - developer.mulesoft.com
+    - support.mulesoft.com
+    - github.com
+    - stackoverflow.com
+  required_keywords:
+    - mulesoft
+    - api
+    - integration
+    - runtime
+    - anypoint
+  forbidden_keywords:
+    - porn
+    - xxx
+    - adult
+    - casino
+    - gambling
+    - torrent
+    - pirate
+    - crack
+    - hack
+  max_daily_searches: 30
+  rate_limit:
+    min_delay_seconds: 3.0
+    max_requests_per_minute: 10
+
+sap:
+  enabled: true
+  allowed_domains:
+    - help.sap.com
+    - support.sap.com
+    - community.sap.com
+    - blogs.sap.com
+    - launchpad.support.sap.com
+    - stackoverflow.com
+  required_keywords:
+    - sap
+    - erp
+    - hana
+    - fiori
+    - s/4hana
+  forbidden_keywords:
+    - porn
+    - xxx
+    - adult
+    - casino
+    - gambling
+    - torrent
+    - pirate
+    - crack
+    - hack
+  max_daily_searches: 20
+  rate_limit:
+    min_delay_seconds: 3.0
+    max_requests_per_minute: 10
+
+# User-Agents realistas para simular navegadores
+user_agents:
+  - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  - "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
+  - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15"
+
+# Términos técnicos para mejorar búsquedas
+search_enhancements:
+  mulesoft: "documentation"
+  darwin: "documentation"
+  sap: "documentation"
