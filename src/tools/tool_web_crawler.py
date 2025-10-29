@@ -339,17 +339,29 @@ class WebCrawlerTool:
                 )
             
             # Realizar búsqueda
+            # En duckduckgo-search 3.8.0, DDGS() no acepta parámetros
             ddgs = DDGS()
-            # En duckduckgo-search 3.8.0, text() devuelve un generador
-            # y no acepta max_results como parámetro directo
+            
+            # text() devuelve un generador y acepta parámetros de búsqueda
             results = []
             try:
+                # Iterar sobre el generador con límite manual
                 for result in ddgs.text(query, region='wt-wt', safesearch='moderate', timelimit=None):
                     results.append(result)
                     if len(results) >= 10:
                         break
             except StopIteration:
                 pass
+            except Exception as e:
+                self.logger.error(f"Error iterando resultados DuckDuckGo: {e}")
+                # Intentar sin parámetros opcionales
+                try:
+                    for result in ddgs.text(query):
+                        results.append(result)
+                        if len(results) >= 10:
+                            break
+                except Exception as e2:
+                    self.logger.error(f"Error en búsqueda simplificada: {e2}")
             
             if not results:
                 self.logger.warning(f"DuckDuckGo no devolvió resultados para: {query}")
