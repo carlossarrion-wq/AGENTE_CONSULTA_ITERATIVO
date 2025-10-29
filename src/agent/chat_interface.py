@@ -80,13 +80,21 @@ class ChatInterface:
     
     def _display_welcome_message(self) -> None:
         """Muestra mensaje de bienvenida"""
+        # Calcular espacios para alinear correctamente
+        # La línea tiene 64 caracteres entre ║ y ║
+        # "  Bienvenido al asistente especializado en consultas sobre      " = 64 chars
+        # "  la base de conocimiento " = 27 chars, dejando 37 chars para app_name + espacios
+        app_name_line = f"  la base de conocimiento {self.app_name}"
+        spaces_needed = 64 - len(app_name_line)
+        app_name_formatted = app_name_line + " " * spaces_needed
+        
         welcome = f"""
 ╔════════════════════════════════════════════════════════════════╗
 ║                                                                ║
-║        AGENTE IA DE CONSULTA - {self.app_name.upper():^30}     ║
+║        AGENTE IA DE CONSULTA - {self.app_name.upper():^30}  ║
 ║                                                                ║
 ║  Bienvenido al asistente especializado en consultas sobre      ║
-║  la base de conocimiento {self.app_name:<35} ║
+║{app_name_formatted}║
 ║                                                                ║
 ║  Puedo ayudarte con:                                           ║
 ║  • Consultas funcionales sobre el sistema                      ║

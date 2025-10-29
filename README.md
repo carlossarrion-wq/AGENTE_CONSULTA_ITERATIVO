@@ -750,6 +750,21 @@ Para soporte técnico o preguntas:
 
 ## 🔄 Changelog
 
+### Versión 1.1.0 (Octubre 2025)
+- ✅ **Mejoras en la interfaz de usuario**:
+  - Cambio de "Pensando..." a "Reflexionando..." para mejor UX
+  - Alineación perfecta del cuadro de bienvenida (64 caracteres)
+  - Eliminación de mensajes duplicados al inicio
+  - Supresión de warnings de SSL de OpenSearch
+- ✅ **Streaming mejorado**:
+  - Visualización en tiempo real de respuestas del LLM
+  - Máquina de estados para procesamiento de bloques XML
+  - Indicadores visuales de ejecución de herramientas
+- ✅ **Soporte multi-aplicación**:
+  - Configuración para Darwin, SAP y MuleSoft
+  - System prompts específicos por aplicación
+  - Gestión dinámica de configuración
+
 ### Versión 1.0.0 (Octubre 2025)
 - ✅ Implementación completa del agente conversacional
 - ✅ 4 herramientas de búsqueda integradas
@@ -762,6 +777,6 @@ Para soporte técnico o preguntas:
 
 ---
 
-**Última actualización**: Octubre 2025  
-**Versión**: 1.0.0  
+**Última actualización**: 29 de Octubre 2025  
+**Versión**: 1.1.0  
 **Estado**: Producción

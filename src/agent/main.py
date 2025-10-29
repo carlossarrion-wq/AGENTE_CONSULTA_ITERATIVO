@@ -176,12 +176,6 @@ def main():
             app_name=app_name
         )
         
-        # Mostrar mensaje de bienvenida personalizado
-        print(f"\n{'='*64}")
-        print(f"  Agente IA de Consulta - {app_name}")
-        print(f"  {app_config['description']}")
-        print(f"{'='*64}\n")
-        
         # Ejecutar en modo interactivo
         chat.run_interactive()
         

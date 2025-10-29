@@ -65,7 +65,7 @@ class StreamingDisplay:
         
         # Mostrar encabezado si es una nueva sección
         if self.current_section != "thinking":
-            print(f"\n{warning('🔍 Pensando...')}")
+            print(f"\n{warning('🔍 Reflexionando...')}")
             self.current_section = "thinking"
         
         # Mostrar contenido en amarillo (usando warning que es amarillo)
@@ -455,7 +455,7 @@ El proceso incluye:
     
     buffered_display = StreamingDisplayWithBuffer(enable_colors=True)
     
-    buffered_display.stream_thinking("Pensando...")
+    buffered_display.stream_thinking("Reflexionando...")
     buffered_display.show_tool_indicator('tool_lexical_search')
     buffered_display.stream_answer("Respuesta final")
     

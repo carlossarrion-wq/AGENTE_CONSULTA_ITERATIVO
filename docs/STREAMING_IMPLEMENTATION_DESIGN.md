@@ -161,7 +161,7 @@ class StreamingDisplay:
         Muestra contenido de thinking en tiempo real
         """
         if self.current_section != "thinking":
-            print(f"\n{dim_text('💭 Pensando...')}")
+            print(f"\n{dim_text('💭 Reflexionando...')}")
             self.current_section = "thinking"
         
         # Imprimir contenido sin salto de línea
@@ -327,13 +327,13 @@ Basándome en la información encontrada, la autenticación en Darwin funciona a
 ### Output Mostrado al Usuario (en tiempo real)
 
 ```
-💭 Pensando...
+💭 Reflexionando...
 Necesito buscar información sobre autenticación en Darwin.
 Voy a realizar una búsqueda semántica primero.
 
 🔍 Realizando búsqueda semántica...
 
-💭 Pensando...
+💭 Reflexionando...
 Ahora voy a buscar implementaciones específicas en el código.
 
 📝 Realizando búsqueda léxica...

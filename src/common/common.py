@@ -12,6 +12,10 @@ from typing import Dict, List, Any, Optional
 from opensearchpy import OpenSearch
 from functools import wraps
 import os
+import warnings
+
+# Suprimir warnings de SSL de opensearchpy
+warnings.filterwarnings('ignore', message='Connecting to .* using SSL with verify_certs=False is insecure.')
 
 class Config:
     """Clase para manejar la configuración desde el archivo YAML"""

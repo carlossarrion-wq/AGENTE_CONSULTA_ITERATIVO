@@ -89,7 +89,7 @@ TÚ decides: ¿Necesito más información? → Solicito la ejecución de otra he
 
 ---
 
-## CONTEXTO DEL SISTEMA
+## CONTEXTO DEL SISTEMA DARWIN
 
 {{DYNAMIC_SUMMARIES}}
 
@@ -165,6 +165,7 @@ Diccionario de acrónimos comunes en el proyecto:
   "PVPC": "Precio Voluntario para el Pequeño Consumidor",
   "RECORE": "Régimen Especial de Cogeneración y Residuos",
   "RITE": "Reglamento de Instalaciones Térmicas en Edificios",
+  "SF": "Salesforce",
   "SIPS": "Sistema de Información de Puntos de Suministro",
   "SIRCA": "Sistema de Información de Riesgo de Crédito para la Admisión",
   "SMS": "Short Message Service",
