@@ -262,11 +262,12 @@ class ToolExecutor:
             execution_time = (time.time() - start_time) * 1000
             error_msg = f"Error ejecutando {tool_type.value}: {str(e)}"
             
-            # Log de error (solo al archivo, no a pantalla)
-            self.logger.error(f"❌ ERROR EN EJECUCIÓN")
-            self.logger.error(f"Tiempo de ejecución: {execution_time:.2f}ms")
-            self.logger.error(f"Error: {error_msg}")
-            self.logger.error(separator)
+            # Log de error (solo al archivo de log, no mostrar en consola)
+            # Usar debug en lugar de error para evitar que se muestre en pantalla
+            self.logger.debug(f"❌ ERROR EN EJECUCIÓN")
+            self.logger.debug(f"Tiempo de ejecución: {execution_time:.2f}ms")
+            self.logger.debug(f"Error: {error_msg}")
+            self.logger.debug(separator)
             
             return ToolResult(
                 tool_type=tool_type,
