@@ -7,6 +7,17 @@ global:
   max_content_length: 2000
   min_delay_seconds: 3.0
   request_timeout_seconds: 15
+  # Modo permisivo: false = whitelist estricta, true = solo blacklist
+  permissive_mode: true
+  # Dominios bloqueados en modo permisivo (blacklist)
+  blocked_domains:
+    - porn.com
+    - xxx.com
+    - casino.com
+    - gambling.com
+    - torrent.com
+    - piratebay.org
+    - thepiratebay.org
 
 # Configuración específica por aplicación
 darwin:

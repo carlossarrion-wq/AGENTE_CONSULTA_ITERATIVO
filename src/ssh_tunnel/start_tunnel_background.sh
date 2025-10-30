@@ -58,7 +58,7 @@ start_tunnel() {
     fi
     
     # Iniciar túnel en segundo plano
-    nohup python3 "${SCRIPT_DIR}/src/aws_tunnel.py" > "$TUNNEL_LOG" 2>&1 &
+    nohup python3 "${SCRIPT_DIR}/aws_tunnel.py" > "$TUNNEL_LOG" 2>&1 &
     TUNNEL_PID_VALUE=$!
     echo "$TUNNEL_PID_VALUE" > "$TUNNEL_PID"
     

@@ -95,24 +95,66 @@ class DomainWhitelist:
     
     def __init__(self, config: WebCrawlerConfig):
         self.config = config
+        self.logger = logging.getLogger(__name__)
+        
+        # Obtener configuración de modo permisivo
+        global_config = config.get_global_config()
+        self.permissive_mode = global_config.get('permissive_mode', False)
+        self.blocked_domains = global_config.get('blocked_domains', [])
+        
+        if self.permissive_mode:
+            self.logger.info("🔓 Modo permisivo activado - usando blacklist en lugar de whitelist")
+        else:
+            self.logger.info("🔒 Modo estricto activado - usando whitelist")
     
     def is_allowed(self, url: str, app_name: str) -> bool:
         """Verifica si una URL está permitida"""
         try:
             domain = urlparse(url).netloc.replace('www.', '')
-            app_config = self.config.get_app_config(app_name)
-            allowed = app_config.get('allowed_domains', [])
             
-            for allowed_domain in allowed:
-                if domain == allowed_domain or domain.endswith('.' + allowed_domain):
-                    return True
+            # Modo permisivo: bloquear solo dominios en blacklist
+            if self.permissive_mode:
+                return self._is_allowed_permissive(domain)
+            
+            # Modo estricto: permitir solo dominios en whitelist
+            return self._is_allowed_strict(domain, app_name)
+        except Exception as e:
+            self.logger.debug(f"Error verificando dominio: {e}")
             return False
-        except:
-            return False
+    
+    def _is_allowed_permissive(self, domain: str) -> bool:
+        """Verifica si un dominio está permitido en modo permisivo (blacklist)"""
+        # Verificar si el dominio está en la blacklist
+        for blocked_domain in self.blocked_domains:
+            if domain == blocked_domain or domain.endswith('.' + blocked_domain):
+                self.logger.debug(f"❌ Dominio bloqueado (blacklist): {domain}")
+                return False
+        
+        # Si no está bloqueado, está permitido
+        return True
+    
+    def _is_allowed_strict(self, domain: str, app_name: str) -> bool:
+        """Verifica si un dominio está permitido en modo estricto (whitelist)"""
+        app_config = self.config.get_app_config(app_name)
+        allowed = app_config.get('allowed_domains', [])
+        
+        for allowed_domain in allowed:
+            if domain == allowed_domain or domain.endswith('.' + allowed_domain):
+                return True
+        
+        self.logger.debug(f"❌ Dominio no está en whitelist: {domain}")
+        return False
     
     def filter_urls(self, urls: List[str], app_name: str) -> List[str]:
         """Filtra URLs dejando solo las permitidas"""
-        return [url for url in urls if self.is_allowed(url, app_name)]
+        filtered = [url for url in urls if self.is_allowed(url, app_name)]
+        
+        if self.permissive_mode:
+            self.logger.info(f"🔓 Modo permisivo: {len(filtered)}/{len(urls)} URLs permitidas (bloqueadas: {len(urls) - len(filtered)})")
+        else:
+            self.logger.info(f"🔒 Modo estricto: {len(filtered)}/{len(urls)} URLs en whitelist")
+        
+        return filtered
 
 
 class QueryValidator:
@@ -145,8 +187,8 @@ class QueryValidator:
         
         return True, "OK"
     
-    def enhance_query(self, query: str, app_name: str) -> str:
-        """Mejora la query añadiendo contexto"""
+    def enhance_query(self, query: str, app_name: str, site: str = None) -> str:
+        """Mejora la query añadiendo contexto y restricción de sitio"""
         app_lower = app_name.lower()
         query_lower = query.lower()
         
@@ -158,6 +200,10 @@ class QueryValidator:
         enhancements = self.config.config.get('search_enhancements', {})
         if app_lower in enhancements:
             query = f"{query} {enhancements[app_lower]}"
+        
+        # Si se especifica un sitio, añadir operador site:
+        if site:
+            query = f"site:{site} {query}"
         
         return query
 
@@ -258,7 +304,7 @@ class WebCrawlerTool:
         # User-agents desde configuración
         self.user_agents = self.config.get_user_agents()
     
-    def search_and_extract(self, query: str) -> ToolResult:
+    def search_and_extract(self, query: str, site: str = None) -> ToolResult:
         """
         Busca URLs relevantes en internet (sin extraer contenido)
         
@@ -267,6 +313,7 @@ class WebCrawlerTool:
         
         Args:
             query: Consulta de búsqueda
+            site: (Opcional) Dominio específico para limitar la búsqueda (ej: help.sap.com)
             
         Returns:
             ToolResult con URLs recomendadas
@@ -283,22 +330,40 @@ class WebCrawlerTool:
                     execution_time_ms=(time.time() - start_time) * 1000
                 )
             
-            # 2. Mejorar query
-            enhanced_query = self.query_validator.enhance_query(query, self.app_name)
+            # 2. Mejorar query (con site si se especifica)
+            enhanced_query = self.query_validator.enhance_query(query, self.app_name, site=site)
             self.logger.info(f"Búsqueda web: {enhanced_query}")
             
             # 3. Buscar URLs
             urls = self._search_duckduckgo(enhanced_query)
             
-            # 4. Filtrar por whitelist
-            allowed_urls = self.domain_whitelist.filter_urls(urls, self.app_name)
-            
-            if not allowed_urls:
+            # Si no hay URLs, el problema es que DuckDuckGo no devolvió resultados
+            if not urls:
                 return ToolResult(
                     success=False,
-                    error="No se encontraron fuentes permitidas",
+                    error="No se encontraron fuentes de información válidas para esta consulta.",
                     execution_time_ms=(time.time() - start_time) * 1000
                 )
+            
+            # 4. Filtrar por whitelist/blacklist
+            allowed_urls = self.domain_whitelist.filter_urls(urls, self.app_name)
+            
+            # Si hay URLs pero todas fueron bloqueadas
+            if not allowed_urls:
+                if self.domain_whitelist.permissive_mode:
+                    # En modo permisivo, esto significa que todas las URLs están en la blacklist
+                    return ToolResult(
+                        success=False,
+                        error="No se encontraron fuentes de información válidas para esta consulta. Los resultados encontrados están en la lista de sitios bloqueados.",
+                        execution_time_ms=(time.time() - start_time) * 1000
+                    )
+                else:
+                    # En modo estricto, esto significa que ninguna URL está en la whitelist
+                    return ToolResult(
+                        success=False,
+                        error="No se encontraron fuentes de información válidas para esta consulta. Los resultados no están en la lista de sitios permitidos para esta aplicación.",
+                        execution_time_ms=(time.time() - start_time) * 1000
+                    )
             
             self.logger.info(f"URLs permitidas: {len(allowed_urls)}/{len(urls)}")
             
@@ -616,7 +681,7 @@ def execute_web_crawler(params: Dict[str, Any], config_path: str = "config/web_c
     Función de entrada para ejecutar la herramienta
     
     Args:
-        params: Parámetros con 'query' y opcionalmente 'app_name'
+        params: Parámetros con 'query', opcionalmente 'app_name' y 'site'
         config_path: Ruta al archivo de configuración
         
     Returns:
@@ -624,6 +689,7 @@ def execute_web_crawler(params: Dict[str, Any], config_path: str = "config/web_c
     """
     query = params.get('query', '')
     app_name = params.get('app_name', 'mulesoft')  # Default a mulesoft
+    site = params.get('site', None)  # Sitio específico opcional
     
     if not query:
         return ToolResult(
@@ -632,7 +698,7 @@ def execute_web_crawler(params: Dict[str, Any], config_path: str = "config/web_c
         )
     
     tool = WebCrawlerTool(app_name=app_name, config_path=config_path)
-    return tool.search_and_extract(query)
+    return tool.search_and_extract(query, site=site)
 
 
 def main():
