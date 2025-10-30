@@ -105,8 +105,11 @@ class LLMCommunication:
         self.config = ConfigManager(config_path)
         self.logger = logging.getLogger(__name__)
         
-        # Inicializar S3 Summaries Loader
-        self.s3_loader = S3SummariesLoader()
+        # Obtener configuración de S3 desde el archivo de configuración
+        s3_config = self.config.get_section('s3')
+        
+        # Inicializar S3 Summaries Loader con la configuración correcta
+        self.s3_loader = S3SummariesLoader(s3_config=s3_config)
         
         # Leer ruta del system prompt desde configuración
         agent_config = self.config.get_section('agent')

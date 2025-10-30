@@ -16,26 +16,43 @@ from botocore.exceptions import ClientError, BotoCoreError
 class S3SummariesLoader:
     """Cargador de resúmenes desde S3 para popular el system prompt"""
     
-    def __init__(self, bucket_name: str = "rag-system-darwin-eu-west-1", 
-                 summaries_prefix: str = "applications/darwin/summaries/",
-                 region_name: str = "eu-west-1"):
+    def __init__(self, s3_config: Optional[Dict[str, Any]] = None):
         """
         Inicializa el cargador de resúmenes desde S3
         
         Args:
-            bucket_name: Nombre del bucket S3
-            summaries_prefix: Prefijo de la ruta donde están los resúmenes
-            region_name: Región de AWS
+            s3_config: Diccionario con configuración de S3 (bucket_name, prefix, region_name)
+                      Si es None, usa valores por defecto de Darwin
         """
         self.logger = logging.getLogger(__name__)
-        self.bucket_name = bucket_name
-        self.summaries_prefix = summaries_prefix
-        self.region_name = region_name
+        
+        # Usar configuración proporcionada o valores por defecto
+        if s3_config is None:
+            s3_config = {
+                'bucket_name': 'rag-system-darwin-eu-west-1',
+                'prefix': 'applications/darwin/',
+                'region_name': 'eu-west-1'
+            }
+        
+        self.bucket_name = s3_config.get('bucket_name', 'rag-system-darwin-eu-west-1')
+        base_prefix = s3_config.get('prefix', 'applications/darwin/')
+        
+        # Asegurar que el prefijo termine con '/' y agregar 'summaries/'
+        if not base_prefix.endswith('/'):
+            base_prefix += '/'
+        self.summaries_prefix = f"{base_prefix}summaries/"
+        
+        self.region_name = s3_config.get('region_name', 'eu-west-1')
+        
+        self.logger.info(f"S3SummariesLoader inicializado:")
+        self.logger.info(f"  • Bucket: {self.bucket_name}")
+        self.logger.info(f"  • Prefix: {self.summaries_prefix}")
+        self.logger.info(f"  • Region: {self.region_name}")
         
         # Inicializar cliente S3
         try:
-            self.s3_client = boto3.client('s3', region_name=region_name)
-            self.logger.info(f"Cliente S3 inicializado para bucket: {bucket_name}")
+            self.s3_client = boto3.client('s3', region_name=self.region_name)
+            self.logger.info(f"Cliente S3 inicializado para bucket: {self.bucket_name}")
         except Exception as e:
             self.logger.error(f"Error inicializando cliente S3: {str(e)}")
             raise

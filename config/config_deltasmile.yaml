@@ -1,4 +1,4 @@
-# Configuración para las herramientas MuleSoft
+# Configuración para las herramientas DeltaSmile
 # Esta configuración usa conexión real a OpenSearch y AWS
 
 # Configuración de OpenSearch
@@ -11,7 +11,7 @@ opensearch:
   region: "eu-west-1"
   timeout: 30
   max_retries: 3
-  index_name: "rag-documents-mulesoft"
+  index_name: "rag-documents-deltasmile"
   scroll_timeout: "2m"
   mock_mode: false
 
@@ -24,7 +24,7 @@ opensearch:
 #   region: "eu-west-1"
 #   timeout: 30
 #   max_retries: 3
-#   index_name: "rag-documents-mulesoft"
+#   index_name: "rag-documents-deltasmile"
 #   scroll_timeout: "2m"
 #   mock_mode: false
 
@@ -37,10 +37,10 @@ bedrock:
 
 # Configuración de AWS S3
 s3:
-  bucket_arn: "arn:aws:s3:::rag-system-mulesoft-eu-west-1"
-  bucket_name: "rag-system-mulesoft-eu-west-1"
+  bucket_arn: "arn:aws:s3:::rag-system-deltasmile-eu-west-1"
+  bucket_name: "rag-system-deltasmile-eu-west-1"
   region_name: "eu-west-1"
-  prefix: "applications/mulesoft/"
+  prefix: "applications/deltasmile/"
   mock_mode: false
 
 # Configuración por defecto para las herramientas
@@ -86,7 +86,7 @@ cache:
 agent:
   max_tool_iterations: 10
   enable_tool_execution: true
-  system_prompt_file: "config/system_prompt_mulesoft.md"
+  system_prompt_file: "config/system_prompt_deltasmile.md"
 
 # Configuración del LLM
 llm:

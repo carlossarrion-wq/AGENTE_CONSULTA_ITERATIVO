@@ -37,8 +37,8 @@ bedrock:
 
 # Configuración de AWS S3
 s3:
-  bucket_arn: "arn:aws:s3:::rag-system-darwin-eu-west-1"
-  bucket_name: "rag-system-darwin-eu-west-1"
+  bucket_arn: "arn:aws:s3:::rag-system-sap-eu-west-1"
+  bucket_name: "rag-system-sap-eu-west-1"
   region_name: "eu-west-1"
   prefix: "applications/sap/"
   mock_mode: false
