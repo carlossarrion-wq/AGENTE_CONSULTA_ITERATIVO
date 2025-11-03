@@ -103,6 +103,7 @@ Este agente tiene acceso a documentación técnica y funcional de MuleSoft, incl
 {{DYNAMIC_SUMMARIES}}
 
 ---
+
 ## CONOCIMIENTO BASE DEL DOMINIO
 
 ### Sinónimos Relevantes
@@ -111,11 +112,161 @@ Para mejorar las búsquedas, ten en cuenta estos sinónimos del dominio:
 
 ```json
 {
-  "MuleSoft": ["Mule", "capa de integración"],
-  "NAPAI": ["data lake"],
-  "PaP": ["paso a producción", "despliegue en producción", "hito"],
-  "SAP": ["SAP-ISU"],
+  "synonyms": {
+    "metadata": {
+      "system": "MuleSoft",
+      "description": "Listado exhaustivo de sinónimos y términos relacionados del sistema MuleSoft - Ordenado alfabéticamente"
+    },
+    "terms": {
+      "Autenticación": ["login", "inicio de sesión", "identificación"],
+      "Autorización": ["permiso", "acceso", "bypass"],
+      "Cambio": ["modificación", "actualización"],
+      "Cambio de cuenta bancaria": ["cambio de IBAN", "cambio de datos bancarios"],
+      "Cambio de producto": ["cambio de tarifa", "cambio de oferta"],
+      "Cambio de titular": ["subrogación", "cambio de propietario"],
+      "Caso": ["gestión", "solicitud"],
+      "Cliente": ["usuario", "consumidor", "titular"],
+      "Comercializadora": ["distribuidor", "proveedor"],
+      "Compensación": ["pago", "liquidación"],
+      "Confirmación": ["validación", "verificación"],
+      "Contratación": ["alta de servicio", "nueva póliza"],
+      "Contrato": ["acuerdo", "póliza", "servicio contratado"],
+      "Datos bancarios": ["IBAN", "cuenta bancaria"],
+      "Datos de contacto": ["email", "teléfono"],
+      "Datos de correspondencia": ["dirección de correspondencia", "domicilio"],
+      "Deuda": ["impago", "factura pendiente"],
+      "Dirección": ["domicilio", "ubicación"],
+      "Documento": ["archivo", "fichero", "PDF"],
+      "Energía": ["luz", "gas"],
+      "Factura": ["documento de cobro", "recibo"],
+      "Factura Electrónica": ["FAE", "factura-E"],
+      "Factura Online": ["FOL", "factura digital"],
+      "Firma": ["firma digital", "firma electrónica"],
+      "Fraccionamiento": ["división de pago", "plan de pagos"],
+      "Gestión": ["solicitud", "trámite", "caso"],
+      "Impago": ["deuda", "factura pendiente"],
+      "Lectura": ["medición", "consumo registrado"],
+      "Localidad": ["municipio", "ciudad"],
+      "Maestro de direcciones": ["callejero", "normalización de direcciones"],
+      "Mensaje": ["comunicación", "notificación"],
+      "Modalidad de envío": ["canal de distribución", "método de entrega"],
+      "Notificación": ["aviso", "alerta"],
+      "Pago": ["cobro", "transacción", "abono"],
+      "Potencia": ["capacidad de suministro", "nivel de energía"],
+      "Producto": ["servicio", "contrato", "oferta"],
+      "Punto de Suministro": ["PS", "CUPS"],
+      "Reclamación": ["queja", "protesta", "disputa"],
+      "Registro": ["inscripción", "alta de usuario"],
+      "Solicitud": ["petición", "demanda", "gestión"],
+      "Subrogación": ["asunción de derechos", "transferencia de obligaciones"],
+      "Suministro": ["servicio", "contrato"],
+      "Switching": ["cambio de comercializadora", "cambio de proveedor"],
+      "Tarifa": ["precio", "plan de precios"],
+      "Titular": ["propietario", "cliente principal"],
+      "Valor": ["importe", "cantidad", "monto"]
+    }
+  }
+}
+```
 
+Para mejorar las búsquedas, ten en cuenta estos terminos técnicos de MuleSoft:
+
+```json
+{
+  "synonyms": {
+    "metadata": {
+      "system": "MuleSoft",
+      "description": "Listado exhaustivo de términos técnicos relacionados con el sistema MuleSoft - Ordenado alfabéticamente"
+    },
+    "terms": {
+      "API": ["endpoint", "servicio web"],
+      "Batch": ["procesamiento por lotes", "ejecución programada"],
+      "Callback": ["llamada de retorno", "respuesta asíncrona"],
+      "Composite API": ["API compuesta", "llamada múltiple"],
+      "Conector": ["adaptador", "integrador"],
+      "DataWeave": ["lenguaje de transformación", "mapeo de datos"],
+      "Endpoint": ["ruta", "punto de acceso", "servicio"],
+      "Error": ["fallo", "KO", "problema"],
+      "Error Handler": ["gestor de errores", "manejador de excepciones"],
+      "Evento": ["suceso", "activación", "notificación"],
+      "Flow": ["flujo", "proceso", "workflow"],
+      "Header": ["encabezado", "metadatos de solicitud"],
+      "Impresión": ["generación de documento", "composición de PDF"],
+      "Integración": ["conexión", "sincronización"],
+      "JSON": ["formato de datos", "estructura de datos"],
+      "Logging": ["registro de eventos", "trazabilidad"],
+      "Middleware": ["capa intermedia", "software de integración"],
+      "Monitoreo": ["supervisión", "observabilidad"],
+      "Payload": ["carga útil", "datos de solicitud"],
+      "Plataforma": ["sistema", "portal", "frontal"],
+      "Proceso": ["flujo", "procedimiento", "workflow"],
+      "Query": ["consulta", "búsqueda"],
+      "Reintentos": ["reintento", "nueva tentativa"],
+      "Request": ["solicitud", "petición"],
+      "Response": ["respuesta", "resultado", "feedback", "confirmación"],
+      "Scheduler": ["planificador", "programador de tareas"],
+      "Timeout": ["tiempo de espera", "límite de tiempo"],
+      "Token": ["clave de acceso", "identificador temporal"],
+      "Trace ID": ["identificador de seguimiento", "ID de trazabilidad"],
+      "Transacción": ["operación", "movimiento", "proceso de pago"],
+      "Transformación": ["mapeo", "conversión de formato"],
+      "URL": ["dirección web", "enlace"],
+      "UUID": ["identificador único", "ID universal"],
+      "Validación": ["verificación", "comprobación", "confirmación"],
+      "Validación XSD": ["validación de esquema", "verificación de estructura"]
+    }
+  }
+}
+```
+
+Para mejorar las búsquedas, ten en cuenta estos sistemas y plataformas de Naturgy con los que se relaciona MuleSoft:
+
+```json
+{
+  "synonyms": {
+    "metadata": {
+      "system": "MuleSoft",
+      "description": "Listado de sistemas y plataformas de Naturgy con los que se relaciona MuleSoft - Ordenado alfabéticamente"
+    },
+    "terms": {
+      "AnyPoint MQ": ["cola de mensajes", "sistema de eventos"],
+      "Área Clientes": ["AC", "plataforma NI"],
+      "CLM": ["generador de documentos", "Contract Lifecycle Management"],
+      "DynamoDB": ["base de datos NoSQL", "almacén de tokens"],
+      "Heroku": ["copia de Salesforce", "repositorio de información"],
+      "Marketing Cloud": ["plataforma de email", "gestor de campañas"],
+      "Omega": ["frontal de Newco", "plataforma Newco"],
+      "Salesforce": ["SF", "CRM", "sistema transaccional Newco"],
+      "SAP": ["SAP-ISU", "ERP", "sistema de facturación"],
+      "Sharepoint": ["gestor documental", "repositorio de documentos"],
+      "Siebel": ["sistema transaccional NI", "plataforma NI"]
+    }
+  }
+}
+```
+
+Para mejorar las búsquedas, ten en cuenta estos estados y resultados propios de operaciones de integración realizadas por MuleSoft:
+
+```json
+{
+  "synonyms": {
+    "metadata": {
+      "system": "MuleSoft",
+      "description": "Listado de estados y resultados propios de operaciones de integración realizadas por MuleSoft - Ordenado alfabéticamente"
+    },
+    "terms": {
+      "Activo": ["vigente", "en funcionamiento", "operativo"],
+      "Cancelado": ["anulado", "revocado", "eliminado"],
+      "Completado": ["finalizado", "terminado", "concluido"],
+      "Confirmado": ["validado", "verificado", "aprobado"],
+      "En curso": ["pendiente", "en proceso", "en ejecución"],
+      "Error": ["fallo", "KO", "rechazo"],
+      "Éxito": ["OK", "aceptado", "completado"],
+      "Pendiente": ["en espera", "sin procesar", "en cola"],
+      "Procesado": ["completado", "finalizado", "ejecutado"],
+      "Rechazado": ["denegado", "no aceptado", "fallido"]
+    }
+  }
 }
 ```
 
@@ -124,42 +275,44 @@ Para mejorar las búsquedas, ten en cuenta estos sinónimos del dominio:
 Diccionario de acrónimos comunes en el proyecto:
 ```json
 {
-  "AAPP": "Administraciones Públicas",
-  "ASNEF": "Asociación Nacional de Establecimientos Financieros de Crédito",
-  "ATR": "Acceso de Terceros a la Red",
-  "BD": "Base de Datos",
-  "BBDD": "Bases de Datos",
-  "CIE": "Certificado de Instalación Eléctrica",
-  "CIF": "Código de Identificación Fiscal",
-  "CNAE": "Clasificación Nacional de Actividades Económicas",
-  "CP": "Código Postal",
-  "CUPS": "Código Universal de Punto de Suministro",
-  "DNI": "Documento Nacional de Identidad",
-  "FOL": "Factura Online",
-  "FUV": "Frontal Único de Ventas",
-  "GDPR": "General Data Protection Regulation (Reglamento General de Protección de Datos)",
-  "IBAN": "International Bank Account Number",
-  "IGIC": "Impuesto General Indirecto Canario",
-  "INE": "Instituto Nacional de Estadística",
-  "IPSI": "Impuesto sobre la Producción, los Servicios y la Importación",
-  "IVA": "Impuesto sobre el Valor Añadido",
-  "KO": "Knock Out (indicador de error/fallo)",
-  "LOPD": "Ley Orgánica de Protección de Datos",
-  "NC": "Naturgy Clientes (Newco)",
-  "NI": "Naturgy Iberia (Imperial)",
-  "NIF": "Número de Identificación Fiscal",
-  "NIE": "Número de Identidad de Extranjero",
-  "NNSS": "Nuevos Suministros",
-  "OTP": "One Time Password",
-  "PDF": "Portable Document Format",
-  "PS": "Punto de Suministro",
-  "SF": "Salesforce",
-  "SIPS": "Sistema de Información de Puntos de Suministro",
-  "SMS": "Short Message Service",
-  "SVA": "Servicios de Valor Añadido",
-  "UFD": "Unión Fenosa Distribución Electricidad S.A.",
-  "URL": "Uniform Resource Locator",
-  "XML": "eXtensible Markup Language",
+  "acronyms": {
+    "metadata": {
+      "system": "MuleSoft",
+      "description": "Listado exhaustivo de acrónimos y abreviaturas del sistema MuleSoft - Ordenado alfabéticamente",
+    },
+    "terms": {
+      "AC": "Área Clientes (plataforma NI)",
+      "ATR": "Acceso de Terceros a la Red",
+      "AVIVA": "Plataforma de firma digital",
+      "CAU": "Código de Autoconsumo",
+      "CIE": "Certificado de Instalación Eléctrica",
+      "CIF": "Código de Identificación Fiscal",
+      "CLM": "Contract Lifecycle Management",
+      "CUO": "Código Único de Operación",
+      "CUPS": "Código Universal de Punto de Suministro",
+      "DNI": "Documento Nacional de Identidad",
+      "FAE": "Factura Electrónica",
+      "FOL": "Factura Online",
+      "FTP": "File Transfer Protocol",
+      "GDPR": "General Data Protection Regulation",
+      "IBAN": "International Bank Account Number",
+      "KO": "Knock Out (indicador de error)",
+      "NAPAI": "API de acceso a datos de NI y NC",
+      "NC": "Naturgy Clientes",
+      "NI": "Naturgy Iberia",
+      "NIE": "Número de Identidad de Extranjero",
+      "NIF": "Número de Identificación Fiscal",
+      "Omega": "Frontal de Newco",
+      "RPA": "Robotic Process Automation",
+      "SAP-ISU": "SAP Industry Solution for Utilities",
+      "SAP": "Sistema de Planificación de Recursos Empresariales",
+      "SEPA": "Zona de Pagos en Euros",
+      "SF": "Salesforce",
+      "SMS": "Short Message Service",
+      "XML": "eXtensible Markup Language",
+      "XSD": "XML Schema Definition"
+    }
+  }
 }
 ```
 

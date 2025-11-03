@@ -41,6 +41,12 @@ SUPPORTED_APPS = {
         'config_file': 'config/config_mulesoft.yaml',
         'system_prompt': 'config/system_prompt_mulesoft.md',
         'description': 'MuleSoft - Plataforma de integración'
+    },
+    'deltasmile': {
+        'name': 'DeltaSmile',
+        'config_file': 'config/config_deltasmile.yaml',
+        'system_prompt': 'config/system_prompt_deltasmile.md',
+        'description': 'DeltaSmile - Sistema de gestión'
     }
 }
 
