@@ -109,7 +109,7 @@ Tienes acceso a las siguientes herramientas especializadas para consultar inform
 
 ### 1. tool_get_file_content
 
-**Descripción**: Obtiene el contenido completo de un archivo específico del índice.
+**Descripción**: Obtiene el contenido completo de un archivo específico del índice. Para archivos grandes (>50KB), devuelve la estructura jerárquica del documento en lugar del contenido completo.
 
 **Cuándo usar**:
 - El usuario solicita ver un archivo específico por nombre
@@ -120,7 +120,57 @@ Tienes acceso a las siguientes herramientas especializadas para consultar inform
 - `file_path` (requerido): Ruta completa del archivo tal como aparece en el índice
 - `include_metadata` (opcional): Incluir metadatos adicionales (true/false, default: false)
 
-**Uso**:
+**Comportamiento con Archivos Grandes**:
+
+Cuando el archivo supera 50,000 caracteres, la herramienta automáticamente:
+1. **Analiza la estructura** del documento (secciones, subsecciones, jerarquía)
+2. **Devuelve la estructura** en lugar del contenido completo
+3. **Te indica** que uses `tool_get_file_section` para obtener secciones específicas
+
+**Respuesta para archivos grandes**:
+```json
+{
+  "file_path": "manual_usuario.pdf",
+  "access_mode": "progressive",
+  "content_length": 125000,
+  "message": "Este archivo es grande (125,000 caracteres). Se proporciona la estructura del documento.",
+  "structure": {
+    "sections": [
+      {
+        "id": "section_1",
+        "title": "Introducción",
+        "level": 1,
+        "start_pos": 0,
+        "end_pos": 5000,
+        "subsections": [...]
+      },
+      ...
+    ]
+  },
+  "recommendation": "Analiza la estructura y selecciona las secciones relevantes. Luego usa tool_get_file_section."
+}
+```
+
+**Flujo de trabajo con archivos grandes**:
+
+1. **Primera llamada** - Obtener estructura:
+```xml
+<tool_get_file_content>
+<file_path>manual_usuario.pdf</file_path>
+</tool_get_file_content>
+```
+
+2. **Analizar estructura** recibida e identificar secciones relevantes
+
+3. **Segunda llamada** - Obtener sección específica:
+```xml
+<tool_get_file_section>
+<file_path>manual_usuario.pdf</file_path>
+<section_id>section_3</section_id>
+</tool_get_file_section>
+```
+
+**Uso básico**:
 ```xml
 <tool_get_file_content>
 <file_path>/documentacion/manual_usuario.pdf</file_path>
@@ -128,9 +178,95 @@ Tienes acceso a las siguientes herramientas especializadas para consultar inform
 </tool_get_file_content>
 ```
 
+**IMPORTANTE**: Si recibes una respuesta con `"access_mode": "progressive"`, NO intentes obtener el contenido completo de nuevo. En su lugar:
+1. Analiza la estructura proporcionada
+2. Identifica las secciones relevantes para la consulta del usuario
+3. Usa `tool_get_file_section` para obtener solo las secciones necesarias
+
 ---
 
-### 2. tool_semantic_search
+### 2. tool_get_file_section
+
+**Descripción**: Obtiene una sección específica de un documento grande, permitiendo acceso progresivo y eficiente a archivos extensos.
+
+**Cuándo usar**:
+- Después de recibir una estructura de documento con `tool_get_file_content`
+- Cuando necesitas solo una parte específica de un archivo grande
+- Para acceder a secciones concretas sin cargar todo el documento
+
+**Parámetros**:
+- `file_path` (requerido): Ruta completa del archivo
+- `section_id` (opcional): ID de la sección a obtener (ej: "section_3")
+- `section_title` (opcional): Título de la sección a buscar (ej: "Configuración")
+- `start_pos` (opcional): Posición de inicio en caracteres
+- `end_pos` (opcional): Posición final en caracteres
+- `include_subsections` (opcional): Incluir subsecciones (true/false, default: true)
+
+**Nota**: Debes proporcionar al menos uno de: `section_id`, `section_title`, o `start_pos`/`end_pos`.
+
+**Uso con section_id** (recomendado):
+```xml
+<tool_get_file_section>
+<file_path>manual_usuario.pdf</file_path>
+<section_id>section_3</section_id>
+<include_subsections>true</include_subsections>
+</tool_get_file_section>
+```
+
+**Uso con section_title**:
+```xml
+<tool_get_file_section>
+<file_path>manual_usuario.pdf</file_path>
+<section_title>Configuración del Sistema</section_title>
+<include_subsections>false</include_subsections>
+</tool_get_file_section>
+```
+
+**Uso con posiciones** (para rangos específicos):
+```xml
+<tool_get_file_section>
+<file_path>manual_usuario.pdf</file_path>
+<start_pos>10000</start_pos>
+<end_pos>25000</end_pos>
+</tool_get_file_section>
+```
+
+**Ejemplo de flujo completo**:
+
+1. Usuario pregunta: "¿Cómo se configura el módulo de facturación?"
+
+2. Primero obtienes la estructura:
+```xml
+<tool_get_file_content>
+<file_path>manual_facturacion.pdf</file_path>
+</tool_get_file_content>
+```
+
+3. Recibes estructura con `access_mode: "progressive"` y ves:
+```json
+{
+  "sections": [
+    {"id": "section_1", "title": "Introducción"},
+    {"id": "section_2", "title": "Instalación"},
+    {"id": "section_3", "title": "Configuración del Módulo"},
+    {"id": "section_4", "title": "Uso Avanzado"}
+  ]
+}
+```
+
+4. Identificas que "section_3" es relevante y la solicitas:
+```xml
+<tool_get_file_section>
+<file_path>manual_facturacion.pdf</file_path>
+<section_id>section_3</section_id>
+</tool_get_file_section>
+```
+
+5. Recibes solo el contenido de esa sección y respondes al usuario
+
+---
+
+### 3. tool_semantic_search
 
 **Descripción**: Realiza búsquedas semánticas usando embeddings vectoriales para encontrar contenido por significado, no solo por palabras exactas.
 

@@ -22,6 +22,13 @@ from common.common import (
     remove_duplicate_chunks_by_hash
 )
 
+# Importar herramientas de acceso progresivo
+try:
+    from tools.document_structure_analyzer import DocumentStructureAnalyzer
+    PROGRESSIVE_ACCESS_AVAILABLE = True
+except ImportError:
+    PROGRESSIVE_ACCESS_AVAILABLE = False
+
 class GetFileContent:
     """Clase principal para obtener contenido de archivos"""
     
@@ -45,13 +52,15 @@ class GetFileContent:
                    include_metadata: Optional[bool] = None) -> Dict[str, Any]:
         """
         Obtiene el contenido completo de un archivo específico.
+        Si el archivo es muy grande, devuelve la estructura del documento
+        para acceso progresivo.
         
         Args:
             file_path: Nombre del archivo tal como aparece en el índice
             include_metadata: Incluir metadatos adicionales
             
         Returns:
-            Dict con el contenido del archivo
+            Dict con el contenido del archivo o su estructura si es muy grande
         """
         # Aplicar valores por defecto
         include_metadata = include_metadata if include_metadata is not None else self.defaults.get('include_metadata', False)
@@ -80,20 +89,35 @@ class GetFileContent:
                     "available_files": available_files
                 }
             
-            # 3. Reconstruir contenido completo manejando overlaps
+            # 3. Ordenar chunks
             chunks = sorted(all_chunks, key=lambda x: x['_source'].get('chunk_id', 0))
+            
+            # 4. Verificar si el archivo es muy grande y si el acceso progresivo está habilitado
+            max_length = self.defaults.get('max_content_length_for_full_retrieval', 50000)
+            enable_progressive = self.defaults.get('enable_progressive_access', True)
+            
+            # Calcular longitud total estimada
+            total_length = sum(len(chunk['_source'].get('content', '')) for chunk in chunks)
+            
+            # 5. Si el archivo es grande y el acceso progresivo está habilitado, devolver estructura
+            if enable_progressive and total_length > max_length and PROGRESSIVE_ACCESS_AVAILABLE:
+                self.logger.info(f"Archivo {file_path} es grande ({total_length} chars). Usando acceso progresivo.")
+                return self._get_document_structure(file_path, chunks, include_metadata)
+            
+            # 6. Si el archivo es pequeño o el acceso progresivo está deshabilitado, devolver contenido completo
             full_content = self._reconstruct_content_with_overlap_handling(chunks)
             
-            # 4. Preparar resultado
+            # 7. Preparar resultado
             result = {
                 "file_path": file_path,
                 "content": full_content,
                 "total_chunks": len(chunks),
                 "content_length": len(full_content),
-                "overlap_handling": "applied"
+                "overlap_handling": "applied",
+                "access_mode": "full"
             }
             
-            # 5. Incluir metadata si se solicita
+            # 8. Incluir metadata si se solicita
             if include_metadata and chunks:
                 result["metadata"] = chunks[0]['_source'].get('metadata', {})
                 result["file_info"] = {
@@ -103,7 +127,7 @@ class GetFileContent:
                     "file_size": chunks[0]['_source'].get('metadata', {}).get('file_size')
                 }
             
-            # 6. Guardar en cache
+            # 9. Guardar en cache
             if self.cache:
                 self.cache.set(cache_key, result)
             
@@ -112,6 +136,83 @@ class GetFileContent:
         except Exception as e:
             self.logger.error(f"Error al obtener contenido del archivo: {str(e)}")
             raise
+    
+    def _get_document_structure(self, file_path: str, chunks: List[Dict], 
+                               include_metadata: bool) -> Dict[str, Any]:
+        """
+        Obtiene la estructura del documento para acceso progresivo.
+        
+        Args:
+            file_path: Nombre del archivo
+            chunks: Lista de chunks del documento
+            include_metadata: Si incluir metadatos
+            
+        Returns:
+            Dict con la estructura del documento
+        """
+        try:
+            # Reconstruir contenido completo para análisis de estructura
+            full_content = self._reconstruct_content_with_overlap_handling(chunks)
+            
+            # Usar DocumentStructureAnalyzer para obtener la estructura
+            analyzer = DocumentStructureAnalyzer(self.config)
+            structure_result = analyzer.analyze_structure(file_path)
+            
+            if "error" in structure_result:
+                # Si hay error en el análisis, devolver contenido completo como fallback
+                self.logger.warning(f"Error analizando estructura de {file_path}, devolviendo contenido completo")
+                return {
+                    "file_path": file_path,
+                    "content": full_content,
+                    "total_chunks": len(chunks),
+                    "content_length": len(full_content),
+                    "access_mode": "full",
+                    "note": "Progressive access failed, returning full content"
+                }
+            
+            # Preparar resultado con estructura
+            result = {
+                "file_path": file_path,
+                "access_mode": "progressive",
+                "total_chunks": len(chunks),
+                "content_length": len(full_content),
+                "structure": structure_result.get("structure", {}),
+                "message": (
+                    f"Este archivo es grande ({len(full_content):,} caracteres). "
+                    f"Se proporciona la estructura del documento. "
+                    f"Usa la herramienta 'get_file_section' para obtener secciones específicas."
+                ),
+                "available_sections": structure_result.get("structure", {}).get("sections", []),
+                "recommendation": (
+                    "Analiza la estructura y selecciona las secciones relevantes para tu consulta. "
+                    "Luego usa get_file_section con los identificadores de sección apropiados."
+                )
+            }
+            
+            # Incluir metadata si se solicita
+            if include_metadata and chunks:
+                result["metadata"] = chunks[0]['_source'].get('metadata', {})
+                result["file_info"] = {
+                    "first_chunk_id": chunks[0]['_source'].get('chunk_id'),
+                    "last_chunk_id": chunks[-1]['_source'].get('chunk_id'),
+                    "file_extension": chunks[0]['_source'].get('metadata', {}).get('file_extension'),
+                    "file_size": chunks[0]['_source'].get('metadata', {}).get('file_size')
+                }
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error obteniendo estructura del documento: {str(e)}")
+            # Fallback: devolver contenido completo
+            full_content = self._reconstruct_content_with_overlap_handling(chunks)
+            return {
+                "file_path": file_path,
+                "content": full_content,
+                "total_chunks": len(chunks),
+                "content_length": len(full_content),
+                "access_mode": "full",
+                "note": f"Progressive access error: {str(e)}"
+            }
     
     def _get_all_chunks(self, file_path: str) -> List[Dict]:
         """Obtiene todos los chunks de un archivo usando scroll"""

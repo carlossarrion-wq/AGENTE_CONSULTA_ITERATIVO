@@ -71,6 +71,9 @@ defaults:
     batch_size: 100
     min_overlap: 50
     similarity_threshold: 0.85
+    # Configuración de acceso progresivo
+    max_content_length_for_full_retrieval: 50000  # 50KB - archivos mayores usan acceso progresivo
+    enable_progressive_access: true
 
 # Configuración de logging
 logging:
