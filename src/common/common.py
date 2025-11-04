@@ -220,14 +220,40 @@ class Logger:
         if log_file:
             os.makedirs(os.path.dirname(log_file), exist_ok=True)
         
+        # Configurar nivel de logging para nuestros módulos
+        log_level = getattr(logging, config.get('logging.level', 'INFO'))
+        log_format = config.get('logging.format')
+        
+        # Crear handlers
+        handlers = []
+        if log_file:
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setFormatter(logging.Formatter(log_format))
+            handlers.append(file_handler)
+        
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(logging.Formatter(log_format))
+        handlers.append(console_handler)
+        
+        # Configurar root logger con nivel WARNING para evitar logs de librerías
         logging.basicConfig(
-            level=getattr(logging, config.get('logging.level', 'INFO')),
-            format=config.get('logging.format'),
-            handlers=[
-                logging.FileHandler(log_file) if log_file else logging.StreamHandler(),
-                logging.StreamHandler()
-            ]
+            level=logging.WARNING,
+            format=log_format,
+            handlers=handlers
         )
+        
+        # Configurar nuestros loggers específicamente
+        for module in ['agent', 'tools', 'common']:
+            logger = logging.getLogger(module)
+            logger.setLevel(log_level)
+        
+        # Silenciar loggers de AWS y otras librerías
+        logging.getLogger('boto3').setLevel(logging.WARNING)
+        logging.getLogger('botocore').setLevel(logging.WARNING)
+        logging.getLogger('urllib3').setLevel(logging.WARNING)
+        logging.getLogger('opensearchpy').setLevel(logging.WARNING)
+        logging.getLogger('requests').setLevel(logging.WARNING)
+        logging.getLogger('s3transfer').setLevel(logging.WARNING)
         
         cls._configured = True
     
