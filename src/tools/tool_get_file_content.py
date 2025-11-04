@@ -296,7 +296,9 @@ class GetFileContent:
                 
                 # Si encontramos resultados, procesarlos
                 if response['hits']['hits']:
-                    self.logger.debug(f"Estrategia {i+1} exitosa para archivo: {file_path}")
+                    # Solo loggear si es la primera estrategia que no funciona (para debugging)
+                    if i > 0:
+                        self.logger.debug(f"Archivo encontrado con estrategia {i+1} para: {file_path}")
                     
                     while len(response['hits']['hits']) > 0:
                         all_chunks.extend(response['hits']['hits'])
@@ -314,7 +316,9 @@ class GetFileContent:
                         break
                         
             except Exception as e:
-                self.logger.debug(f"Estrategia {i+1} falló: {str(e)}")
+                # Solo loggear errores si es la última estrategia
+                if i == len(search_strategies) - 1 and not all_chunks:
+                    self.logger.warning(f"No se pudo encontrar archivo {file_path} después de {len(search_strategies)} estrategias")
                 continue
         
         return all_chunks
@@ -384,7 +388,9 @@ class GetFileContent:
                 # Hay overlap, añadir solo la parte no duplicada
                 unique_part = current_chunk[overlap_length:]
                 result_content += unique_part
-                self.logger.debug(f"Overlap detectado de {overlap_length} caracteres en chunk {i}")
+                # Logging reducido: solo loggear overlaps grandes
+                if overlap_length > 500:
+                    self.logger.debug(f"Overlap grande detectado: {overlap_length} caracteres en chunk {i}")
             else:
                 # No hay overlap detectado, añadir separador y contenido completo
                 if not result_content.endswith('\n'):
