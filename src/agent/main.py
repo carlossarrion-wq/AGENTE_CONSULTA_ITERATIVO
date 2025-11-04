@@ -47,6 +47,12 @@ SUPPORTED_APPS = {
         'config_file': 'config/config_deltasmile.yaml',
         'system_prompt': 'config/system_prompt_deltasmile.md',
         'description': 'DeltaSmile - Sistema de gestión'
+    },
+    'saplcorp': {
+        'name': 'SAPLCorp',
+        'config_file': 'config/config_saplcorp.yaml',
+        'system_prompt': 'config/system_prompt_saplcorp.md',
+        'description': 'SAPLCorp - Sistema SAP Lean Corporate'
     }
 }
 

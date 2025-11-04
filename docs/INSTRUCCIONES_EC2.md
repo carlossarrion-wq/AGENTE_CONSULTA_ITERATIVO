@@ -6,14 +6,14 @@
 
 ```bash
 # Desde tu máquina local, copiar el archivo a EC2
-scp -i ~/.ssh/ec2_new_key knowledge_search_ec2.py ec2-user@52.18.245.120:/home/ec2-user/RAG_SYSTEM_MULTI_v5/scripts/
+scp -i ~/.ssh/ec2_new_key knowledge_search_ec2.py ec2-user@18.202.140.248:/home/ec2-user/RAG_SYSTEM_MULTI_v5/scripts/
 ```
 
 ### 2. Conectar a EC2 y navegar al directorio
 
 ```bash
 # Conectar a EC2
-ssh -i ~/.ssh/ec2_new_key ec2-user@52.18.245.120
+ssh -i ~/.ssh/ec2_new_key ec2-user@18.202.140.248
 
 # Navegar al directorio del sistema RAG
 cd /home/ec2-user/RAG_SYSTEM_MULTI_v5
