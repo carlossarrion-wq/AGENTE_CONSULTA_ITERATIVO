@@ -55,6 +55,7 @@ class StreamingStateMachine:
             '<tool_lexical_search>': StreamState.IN_TOOL,
             '<tool_regex_search>': StreamState.IN_TOOL,
             '<tool_get_file_content>': StreamState.IN_TOOL,
+            '<tool_get_file_section>': StreamState.IN_TOOL,
             '<tool_web_crawler>': StreamState.IN_TOOL,
             '<answer>': StreamState.IN_METADATA,
             '<sources>': StreamState.IN_METADATA,
@@ -71,6 +72,7 @@ class StreamingStateMachine:
                 '</tool_lexical_search>',
                 '</tool_regex_search>',
                 '</tool_get_file_content>',
+                '</tool_get_file_section>',
                 '</tool_web_crawler>'
             ],
             StreamState.IN_METADATA: [

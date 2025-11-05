@@ -123,7 +123,17 @@ class RequestHandler:
         for result in tool_results.results:
             tool_name = result.tool_type.value
             
-            if result.success and result.data:
+            # LOG CRÍTICO: Verificar qué contiene result.data
+            self.logger.info(f"🔍 DEBUG - Herramienta: {tool_name}")
+            self.logger.info(f"🔍 DEBUG - Success: {result.success}")
+            self.logger.info(f"🔍 DEBUG - Data type: {type(result.data)}")
+            self.logger.info(f"🔍 DEBUG - Data is None: {result.data is None}")
+            self.logger.info(f"🔍 DEBUG - Data bool: {bool(result.data)}")
+            if result.data:
+                self.logger.info(f"🔍 DEBUG - Data keys: {list(result.data.keys()) if isinstance(result.data, dict) else 'not a dict'}")
+                self.logger.info(f"🔍 DEBUG - Data preview: {str(result.data)[:200]}")
+
+            if result.success and result.data is not None:
                 # Formatear según el tipo de herramienta
                 if tool_name in ["semantic_search", "lexical_search", "regex_search"]:
                     message += self._format_search_results(result.data)
@@ -133,6 +143,11 @@ class RequestHandler:
                     message += f"{str(result.data)}\n\n"
             elif not result.success:
                 message += f"Error en {tool_name}: {result.error}\n\n"
+            else:
+                # CASO: success=True pero data es None
+                self.logger.error(f"⚠️  WARNING: {tool_name} exitosa pero data es None!")
+                self.logger.error(f"   result.data = {result.data}")
+                message += f"⚠️ WARNING: {tool_name} se ejecutó exitosamente pero no devolvió datos.\n\n"
         
         return message
     
@@ -185,10 +200,50 @@ class RequestHandler:
         Formatea contenido de archivo COMPLETO para el LLM.
         IMPORTANTE: Este contenido se envía al LLM pero NO se muestra en pantalla.
         Solo va a los logs para debugging.
+        
+        Maneja dos modos:
+        1. Modo completo: Envía el contenido completo del archivo
+        2. Modo progresivo: Envía la estructura del documento para que el LLM solicite secciones específicas
         """
         formatted = ""
         
-        if 'content' in results:
+        # Verificar si es modo progresivo
+        access_mode = results.get('access_mode', 'full')
+        
+        if access_mode == 'progressive':
+            # MODO PROGRESIVO: Archivo grande, enviar estructura
+            file_path = results.get('file_path', 'archivo')
+            content_length = results.get('content_length', 0)
+            message = results.get('message', '')
+            
+            formatted += f"📄 **Archivo**: {file_path}\n"
+            formatted += f"⚠️  **Modo de acceso**: PROGRESIVO (archivo grande)\n"
+            formatted += f"📏 **Tamaño**: {content_length:,} caracteres\n\n"
+            formatted += f"**Mensaje**: {message}\n\n"
+            
+            # Enviar estructura completa del documento
+            if 'structure' in results:
+                import json
+                structure = results['structure']
+                formatted += f"📋 **ESTRUCTURA DEL DOCUMENTO**:\n\n"
+                formatted += f"```json\n{json.dumps(structure, indent=2, ensure_ascii=False)}\n```\n\n"
+            
+            # Secciones disponibles
+            if 'available_sections' in results:
+                formatted += f"📑 **Secciones disponibles**: {results['available_sections']}\n\n"
+            
+            # Rangos de chunks
+            if 'chunk_ranges' in results:
+                formatted += f"📊 **Rangos de chunks**: {results['chunk_ranges']}\n\n"
+            
+            # Recomendación
+            if 'recommendation' in results:
+                formatted += f"💡 **Recomendación**: {results['recommendation']}\n\n"
+            
+            formatted += "**INSTRUCCIÓN**: Analiza la estructura y usa `tool_get_file_section` para obtener las secciones relevantes.\n"
+            
+        elif 'content' in results:
+            # MODO COMPLETO: Archivo pequeño, enviar contenido completo
             content = results['content']
             file_name = results.get('file_name', 'archivo')
             
@@ -205,6 +260,14 @@ class RequestHandler:
                 formatted += f"\n**Metadata del archivo:**\n"
                 for key, value in results['metadata'].items():
                     formatted += f"- {key}: {value}\n"
+        else:
+            # CASO DE ERROR: No hay ni modo progresivo ni contenido
+            # Esto no debería pasar, pero si pasa, registrar el problema
+            self.logger.error(f"❌ ERROR: _format_file_content recibió results sin 'access_mode' ni 'content'")
+            self.logger.error(f"Results keys: {list(results.keys())}")
+            self.logger.error(f"Results completo: {str(results)[:500]}")
+            formatted += f"⚠️ ERROR: No se pudo formatear el contenido del archivo.\n"
+            formatted += f"Estructura de resultados inesperada: {list(results.keys())}\n"
         
         return formatted
     
@@ -551,6 +614,15 @@ class RequestHandler:
                 
                 # IMPORTANTE: Pasar la pregunta original del usuario para mantener el contexto
                 tool_results_message = self._format_tool_results_for_llm(tool_results, original_question=user_input)
+                
+                # LOG CRÍTICO: Registrar exactamente qué se está enviando al LLM
+                self.logger.info("="*80)
+                self.logger.info("📤 MENSAJE COMPLETO ENVIADO AL LLM:")
+                self.logger.info("="*80)
+                self.logger.info(tool_results_message)
+                self.logger.info("="*80)
+                self.logger.info(f"Longitud total del mensaje: {len(tool_results_message)} caracteres")
+                self.logger.info("="*80)
                 
                 # IMPORTANTE: Los resultados se envían al LLM pero NO se muestran en pantalla
                 # Solo mostramos un resumen breve al usuario

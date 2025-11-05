@@ -15,6 +15,21 @@ import sys
 import argparse
 from pathlib import Path
 
+# Configurar logging ANTES de importar cualquier otra cosa
+# Esto previene que boto3, opensearch, etc. configuren sus propios handlers
+logging.basicConfig(
+    level=logging.CRITICAL,  # Solo errores críticos en consola
+    format='%(levelname)s: %(message)s'
+)
+
+# Suprimir completamente logs de librerías externas
+logging.getLogger('boto3').setLevel(logging.CRITICAL)
+logging.getLogger('botocore').setLevel(logging.CRITICAL)
+logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+logging.getLogger('s3transfer').setLevel(logging.CRITICAL)
+logging.getLogger('opensearch').setLevel(logging.CRITICAL)
+logging.getLogger('opensearchpy').setLevel(logging.CRITICAL)
+
 # Agregar src al path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -59,8 +74,14 @@ SUPPORTED_APPS = {
 
 def setup_logging():
     """Configura el sistema de logging"""
-    # Configurar el logger raíz
+    # Obtener el logger raíz
     root_logger = logging.getLogger()
+    
+    # Eliminar todos los handlers existentes (incluyendo el de basicConfig)
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+    
+    # Configurar nivel DEBUG para el logger raíz
     root_logger.setLevel(logging.DEBUG)
     
     # Crear directorio logs si no existe
@@ -74,15 +95,9 @@ def setup_logging():
     file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(file_formatter)
     
-    # Handler para consola: solo mensajes WARNING y superiores (errores críticos)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.WARNING)
-    console_formatter = logging.Formatter('%(levelname)s: %(message)s')
-    console_handler.setFormatter(console_formatter)
-    
-    # Agregar handlers
+    # Agregar SOLO el handler de archivo (sin consola)
+    # Todos los logs se guardan en el archivo, NADA se muestra en consola
     root_logger.addHandler(file_handler)
-    root_logger.addHandler(console_handler)
 
 
 def parse_arguments():

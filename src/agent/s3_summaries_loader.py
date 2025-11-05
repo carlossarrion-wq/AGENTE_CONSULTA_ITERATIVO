@@ -30,35 +30,15 @@ class S3SummariesLoader:
         if s3_config is None:
             s3_config = {
                 'bucket_name': 'rag-system-darwin-eu-west-1',
-                'prefix': 'applications/darwin/',
+                'summaries_prefix': 'applications/darwin/summaries/',
                 'region_name': 'eu-west-1'
             }
         
         self.bucket_name = s3_config.get('bucket_name', 'rag-system-darwin-eu-west-1')
         self.region_name = s3_config.get('region_name', 'eu-west-1')
         
-        # Priorizar summaries_path si está disponible en la configuración
-        if 'summaries_path' in s3_config:
-            # Extraer el path del formato s3://bucket/path
-            summaries_path = s3_config['summaries_path']
-            if summaries_path.startswith('s3://'):
-                # Formato: s3://bucket-name/path/to/summaries/
-                parts = summaries_path.replace('s3://', '').split('/', 1)
-                if len(parts) == 2:
-                    self.summaries_prefix = parts[1]  # path/to/summaries/
-                else:
-                    # Solo bucket, sin path
-                    self.summaries_prefix = 'summaries/'
-            else:
-                # Path relativo directo
-                self.summaries_prefix = summaries_path
-        else:
-            # Fallback al comportamiento anterior (construir desde prefix)
-            base_prefix = s3_config.get('prefix', 'applications/darwin/')
-            # Asegurar que el prefijo termine con '/' y agregar 'summaries/'
-            if not base_prefix.endswith('/'):
-                base_prefix += '/'
-            self.summaries_prefix = f"{base_prefix}summaries/"
+        # Usar summaries_prefix directamente
+        self.summaries_prefix = s3_config.get('summaries_prefix', 'applications/darwin/summaries/')
         
         self.logger.info(f"S3SummariesLoader inicializado:")
         self.logger.info(f"  • Bucket: {self.bucket_name}")

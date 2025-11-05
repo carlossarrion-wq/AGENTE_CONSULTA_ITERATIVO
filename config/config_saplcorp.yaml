@@ -1,49 +1,76 @@
+# Configuración PRODUCCIÓN para las herramientas SAP LCorp
+# Esta configuración usa conexión real a OpenSearch y AWS
+
+# Configuración de OpenSearch
+# DESARROLLO (localhost con túnel SSH):
 opensearch:
-  host: localhost
+  host: "localhost"
   port: 9201
   use_ssl: true
   verify_certs: false
-  region: eu-west-1
+  region: "eu-west-1"
   timeout: 30
   max_retries: 3
-  index_name: rag-documents-saplcorp
-  scroll_timeout: 2m
+  index_name: "rag-documents-saplcorp"
+  scroll_timeout: "2m"
   mock_mode: false
+
+# PRODUCCIÓN EC2 (descomentar para usar en EC2):
+# opensearch:
+#   host: "vpc-rag-opensearch-clean-qodnaopeuroal2f6intbz7i5xy.eu-west-1.es.amazonaws.com"
+#   port: 443
+#   use_ssl: true
+#   verify_certs: true
+#   region: "eu-west-1"
+#   timeout: 30
+#   max_retries: 3
+#   index_name: "rag-documents-saplcorp"
+#   scroll_timeout: "2m"
+#   mock_mode: false
+
+# Configuración de AWS Bedrock
 bedrock:
-  region_name: eu-west-1
-  model_id: amazon.titan-embed-image-v1
+  region_name: "eu-west-1"
+  model_id: "amazon.titan-embed-image-v1"
   embedding_dimensions: 1024
   mock_mode: false
-  llm_model: eu.anthropic.claude-3-haiku-20240307-v1:0
+  # Configuración para generación de resúmenes en ingestión
+  llm_model: "eu.anthropic.claude-3-haiku-20240307-v1:0"
   max_tokens: 500
   temperature: 0.3
   top_p: 0.9
+
+# Configuración de AWS S3
 s3:
-  bucket_arn: arn:aws:s3:::rag-system-saplcorp-eu-west-1
-  bucket_name: rag-system-saplcorp-eu-west-1
-  region_name: eu-west-1
-  documents_prefix: documents/documents/
-  summaries_prefix: documents/summaries/
-  inventory_prefix: documents/inventory/
+  bucket_arn: "arn:aws:s3:::rag-system-saplcorp-eu-west-1"
+  bucket_name: "rag-system-saplcorp-eu-west-1"
+  region_name: "eu-west-1"
+  documents_prefix: "documents/"
+  summaries_prefix: "summaries/"
+  inventory_prefix: "inventory/"
   mock_mode: false
+
+# Configuración por defecto para las herramientas
 defaults:
   semantic_search:
     top_k: 10
     min_score: 0.5
     max_results: 1000
+  
   lexical_search:
     top_k: 10
-    operator: OR
+    operator: "OR"
     fuzzy: false
-    fields:
-    - content
+    fields: ["content"]
     fragment_size: 150
     number_of_fragments: 3
+  
   regex_search:
     case_sensitive: true
     max_matches_per_file: 50
     context_lines: 2
     max_documents: 1000
+  
   get_file_content:
     include_metadata: false
     batch_size: 100
@@ -51,47 +78,71 @@ defaults:
     similarity_threshold: 0.85
     max_content_length_for_full_retrieval: 200000  # Máximo de caracteres para devolver contenido completo (200K)
     enable_progressive_access: false  # Habilitar acceso progresivo para archivos grandes
+
+# Configuración de logging
 logging:
-  level: WARNING
-  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-  file: logs/search_tools.log
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/search_tools.log"
+
+# Configuración de cache
 cache:
   enabled: true
   max_size_mb: 100
   ttl_seconds: 3600
+
+# Configuración del agente
 agent:
   max_tool_iterations: 10
   enable_tool_execution: true
-  system_prompt_file: config/system_prompt_saplcorp.md
+  system_prompt_file: "config/system_prompt_saplcorp.md"
+
+# Configuración del LLM
 llm:
-  model_id: eu.anthropic.claude-haiku-4-5-20251001-v1:0
+  model_id: "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
   max_tokens: 4000
   temperature: 0.1
   max_retries: 3
   retry_delay_seconds: 3
+
+# Configuración de conversación
 conversation:
-  max_history_turns: 15
-  context_window_tokens: 180000
+  max_history_turns: 15  # Número máximo de turnos a mantener en historial
+  context_window_tokens: 180000  # 90% de 200K tokens para dejar margen
   system_prompt_caching: true
   tool_results_caching: true
-  enable_sliding_window: true
-  min_turns_to_keep: 3
+  enable_sliding_window: true  # Habilitar ventana deslizante
+  min_turns_to_keep: 3  # Mínimo de turnos a mantener siempre
+
+# Configuración de prompt caching
 prompt_caching:
   enabled: true
   cache_ttl_seconds: 3600
   max_cache_size_mb: 500
+
+# Límites de rendimiento
 limits:
-  max_content_length: 10485760
+  max_content_length: 10485760  # 10MB
   max_chunks_per_file: 1000
   max_search_time_seconds: 30
+
+# Configuración de chunking para ingestión
 chunking:
   chunk_size: 6000
   chunk_overlap: 600
+  # Configuración de chunking de tablas
+  table_min_rows_per_chunk: 10  # Mínimo de filas por chunk de tabla
+  table_max_rows_per_chunk: 100  # Máximo de filas por chunk de tabla
+
+# Configuración de filtros de imagen para ingestión
 image_filtering:
-  min_width: 500
-  min_height: 500
-  min_total_pixels: 250000
-  max_images_per_document: 50
+  min_width: 500  # Ancho mínimo en píxeles
+  min_height: 500  # Alto mínimo en píxeles
+  min_total_pixels: 250000  # Tamaño mínimo total (ancho × alto) 
+  max_images_per_document: 50  # Máximo de imágenes a extraer por documento
+
+# Información de la aplicación
 application:
-  name: SAPLCORP System
-  description: Sistema SAP LCS
+  name: "SAP LCorp System"
+  description: "Sistema de gestión empresarial SAP LCorp"
+

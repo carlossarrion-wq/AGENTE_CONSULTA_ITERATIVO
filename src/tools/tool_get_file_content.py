@@ -69,6 +69,9 @@ class GetFileContent:
         if not isinstance(file_path, str) or len(file_path.strip()) == 0:
             raise ValidationError("file_path debe ser una cadena no vacía")
         
+        # IMPORTANTE: Preservar el file_path original del usuario (puede incluir ruta S3)
+        original_file_path = file_path
+        
         # Verificar cache
         cache_key = f"file_content:{hash(file_path)}:{include_metadata}"
         if self.cache:
@@ -85,7 +88,7 @@ class GetFileContent:
             if not all_chunks:
                 available_files = self._get_available_files_sample()
                 return {
-                    "error": f"Archivo no encontrado: {file_path}",
+                    "error": f"Archivo no encontrado: {original_file_path}",
                     "available_files": available_files
                 }
             
@@ -96,20 +99,27 @@ class GetFileContent:
             max_length = self.defaults.get('max_content_length_for_full_retrieval', 50000)
             enable_progressive = self.defaults.get('enable_progressive_access', True)
             
-            # Calcular longitud total estimada
+            # 5. OPTIMIZACIÓN: Intentar cargar estructura pre-calculada desde S3
+            if enable_progressive and PROGRESSIVE_ACCESS_AVAILABLE:
+                structure_from_s3 = self._load_structure_from_s3(file_path, chunks)
+                if structure_from_s3:
+                    self.logger.info(f"Estructura cargada desde S3 para: {file_path}")
+                    return self._format_structure_response(original_file_path, chunks, structure_from_s3, include_metadata)
+            
+            # 6. Calcular longitud total estimada
             total_length = sum(len(chunk['_source'].get('content', '')) for chunk in chunks)
             
-            # 5. Si el archivo es grande y el acceso progresivo está habilitado, devolver estructura
+            # 7. Si el archivo es grande y el acceso progresivo está habilitado, devolver estructura
             if enable_progressive and total_length > max_length and PROGRESSIVE_ACCESS_AVAILABLE:
-                self.logger.info(f"Archivo {file_path} es grande ({total_length} chars). Usando acceso progresivo.")
-                return self._get_document_structure(file_path, chunks, include_metadata)
+                self.logger.info(f"Archivo {original_file_path} es grande ({total_length} chars). Usando acceso progresivo.")
+                return self._get_document_structure(original_file_path, chunks, include_metadata)
             
             # 6. Si el archivo es pequeño o el acceso progresivo está deshabilitado, devolver contenido completo
             full_content = self._reconstruct_content_with_overlap_handling(chunks)
             
             # 7. Preparar resultado
             result = {
-                "file_path": file_path,
+                "file_path": original_file_path,
                 "content": full_content,
                 "total_chunks": len(chunks),
                 "content_length": len(full_content),
@@ -141,6 +151,7 @@ class GetFileContent:
                                include_metadata: bool) -> Dict[str, Any]:
         """
         Obtiene la estructura del documento para acceso progresivo.
+        OPTIMIZADO: Analiza estructura desde chunks sin reconstruir contenido completo.
         
         Args:
             file_path: Nombre del archivo
@@ -151,41 +162,33 @@ class GetFileContent:
             Dict con la estructura del documento
         """
         try:
-            # Reconstruir contenido completo para análisis de estructura
-            full_content = self._reconstruct_content_with_overlap_handling(chunks)
+            # Calcular longitud total estimada SIN reconstruir el contenido
+            total_length = sum(len(chunk['_source'].get('content', '')) for chunk in chunks)
             
-            # Usar DocumentStructureAnalyzer para obtener la estructura
-            analyzer = DocumentStructureAnalyzer(self.config)
-            structure_result = analyzer.analyze_structure(file_path)
-            
-            if "error" in structure_result:
-                # Si hay error en el análisis, devolver contenido completo como fallback
-                self.logger.warning(f"Error analizando estructura de {file_path}, devolviendo contenido completo")
-                return {
-                    "file_path": file_path,
-                    "content": full_content,
-                    "total_chunks": len(chunks),
-                    "content_length": len(full_content),
-                    "access_mode": "full",
-                    "note": "Progressive access failed, returning full content"
-                }
+            # Analizar estructura desde los chunks directamente
+            structure = self._analyze_structure_from_chunks(chunks)
             
             # Preparar resultado con estructura
             result = {
                 "file_path": file_path,
                 "access_mode": "progressive",
                 "total_chunks": len(chunks),
-                "content_length": len(full_content),
-                "structure": structure_result.get("structure", {}),
+                "content_length": total_length,
+                "structure": structure,
                 "message": (
-                    f"Este archivo es grande ({len(full_content):,} caracteres). "
-                    f"Se proporciona la estructura del documento. "
-                    f"Usa la herramienta 'get_file_section' para obtener secciones específicas."
+                    f"📄 Este archivo es grande ({total_length:,} caracteres, {len(chunks)} chunks). "
+                    f"Se proporciona la estructura del documento para acceso eficiente.\n\n"
+                    f"💡 Usa la herramienta 'get_file_section' para obtener secciones específicas por:\n"
+                    f"   • Rango de chunks (ej: chunks 1-10)\n"
+                    f"   • Rango de páginas (ej: páginas 5-15)\n"
+                    f"   • ID de sección (ej: section_3)"
                 ),
-                "available_sections": structure_result.get("structure", {}).get("sections", []),
+                "available_sections": structure.get("sections", []),
+                "chunk_ranges": structure.get("chunk_ranges", []),
                 "recommendation": (
-                    "Analiza la estructura y selecciona las secciones relevantes para tu consulta. "
-                    "Luego usa get_file_section con los identificadores de sección apropiados."
+                    "1. Revisa la estructura y tabla de contenidos\n"
+                    "2. Identifica las secciones relevantes para tu consulta\n"
+                    "3. Usa get_file_section para obtener el contenido específico"
                 )
             }
             
@@ -196,26 +199,205 @@ class GetFileContent:
                     "first_chunk_id": chunks[0]['_source'].get('chunk_id'),
                     "last_chunk_id": chunks[-1]['_source'].get('chunk_id'),
                     "file_extension": chunks[0]['_source'].get('metadata', {}).get('file_extension'),
-                    "file_size": chunks[0]['_source'].get('metadata', {}).get('file_size')
+                    "file_size": chunks[0]['_source'].get('metadata', {}).get('file_size'),
+                    "total_pages": chunks[0]['_source'].get('metadata', {}).get('total_pages')
                 }
             
             return result
             
         except Exception as e:
             self.logger.error(f"Error obteniendo estructura del documento: {str(e)}")
-            # Fallback: devolver contenido completo
-            full_content = self._reconstruct_content_with_overlap_handling(chunks)
+            # Fallback simplificado: devolver información básica sin contenido
+            total_length = sum(len(chunk['_source'].get('content', '')) for chunk in chunks)
             return {
                 "file_path": file_path,
-                "content": full_content,
+                "access_mode": "progressive",
                 "total_chunks": len(chunks),
-                "content_length": len(full_content),
-                "access_mode": "full",
-                "note": f"Progressive access error: {str(e)}"
+                "content_length": total_length,
+                "message": (
+                    f"📄 Archivo grande detectado ({total_length:,} caracteres, {len(chunks)} chunks).\n\n"
+                    f"💡 Usa 'get_file_section' para obtener contenido por:\n"
+                    f"   • Rango de chunks: chunks 1-10\n"
+                    f"   • Rango de páginas: páginas 1-20"
+                ),
+                "chunk_ranges": [
+                    {
+                        "description": f"Chunks 1-{min(10, len(chunks))} (inicio del documento)",
+                        "chunk_start": 1,
+                        "chunk_end": min(10, len(chunks))
+                    },
+                    {
+                        "description": f"Chunks {len(chunks)//2}-{len(chunks)//2+10} (mitad del documento)",
+                        "chunk_start": len(chunks)//2,
+                        "chunk_end": min(len(chunks)//2+10, len(chunks))
+                    },
+                    {
+                        "description": f"Chunks {max(1, len(chunks)-10)}-{len(chunks)} (final del documento)",
+                        "chunk_start": max(1, len(chunks)-10),
+                        "chunk_end": len(chunks)
+                    }
+                ],
+                "note": f"Error analyzing structure: {str(e)}. Use chunk ranges for access."
             }
+    
+    def _analyze_structure_from_chunks(self, chunks: List[Dict]) -> Dict[str, Any]:
+        """
+        Analiza la estructura del documento desde los chunks sin reconstruir contenido completo.
+        OPTIMIZADO: Solo analiza los primeros chunks para detectar estructura rápidamente.
+        
+        Args:
+            chunks: Lista de chunks del documento
+            
+        Returns:
+            Dict con la estructura del documento
+        """
+        import re
+        
+        # Analizar solo los primeros N chunks para detectar estructura (más rápido)
+        sample_size = min(20, len(chunks))
+        sample_chunks = chunks[:sample_size]
+        
+        sections = []
+        chunk_ranges = []
+        
+        # Patrones para detectar títulos/secciones
+        patterns = [
+            # Números con punto: "1. Título", "1.1 Título"
+            (r'^(\d+(?:\.\d+)*)\s*[.\-:)]?\s+([A-ZÁÉÍÓÚÑ][^\n]{3,100})$', 'numbered'),
+            # Capítulos: "CAPÍTULO 1", "CHAPTER 1"
+            (r'^(CAP[ÍI]TULO|CHAPTER)\s+(\d+)[:\s]+([^\n]{3,100})$', 'chapter'),
+            # Secciones: "SECCIÓN 1", "SECTION 1"
+            (r'^(SECCI[ÓO]N|SECTION)\s+(\d+)[:\s]+([^\n]{3,100})$', 'section'),
+            # Anexos: "ANEXO A", "APPENDIX A"
+            (r'^(ANEXO|AP[ÉE]NDICE|APPENDIX)\s+([A-Z\d]+)[:\s]+([^\n]{3,100})$', 'appendix'),
+            # Títulos en mayúsculas (al menos 5 palabras)
+            (r'^([A-ZÁÉÍÓÚÑ\s]{10,80})$', 'title'),
+        ]
+        
+        compiled_patterns = [(re.compile(p, re.MULTILINE | re.IGNORECASE), t) for p, t in patterns]
+        
+        section_counter = 0
+        
+        # Analizar chunks de muestra
+        for chunk_idx, chunk in enumerate(sample_chunks):
+            content = chunk['_source'].get('content', '')
+            chunk_id = chunk['_source'].get('chunk_id', chunk_idx)
+            
+            lines = content.split('\n')
+            
+            for line in lines[:50]:  # Solo primeras 50 líneas de cada chunk
+                line = line.strip()
+                if len(line) < 5:
+                    continue
+                
+                # Intentar match con cada patrón
+                for pattern, section_type in compiled_patterns:
+                    match = pattern.match(line)
+                    if match:
+                        section_counter += 1
+                        
+                        # Extraer título
+                        if section_type == 'numbered':
+                            section_num = match.group(1)
+                            title = f"{section_num}. {match.group(2)}"
+                            level = section_num.count('.') + 1
+                        elif section_type in ['chapter', 'section', 'appendix']:
+                            title = line
+                            level = 1
+                        else:  # title
+                            title = line
+                            level = 1
+                        
+                        sections.append({
+                            "id": f"section_{section_counter}",
+                            "title": title[:100],  # Limitar longitud
+                            "level": level,
+                            "chunk_start": chunk_id,
+                            "chunk_end": chunk_id,  # Se actualizará si es necesario
+                            "type": section_type
+                        })
+                        break
+        
+        # Crear rangos de chunks sugeridos
+        total_chunks = len(chunks)
+        chunk_ranges = [
+            {
+                "description": "Inicio del documento (primeros 10 chunks)",
+                "chunk_start": 1,
+                "chunk_end": min(10, total_chunks),
+                "estimated_chars": sum(len(chunks[i]['_source'].get('content', '')) for i in range(min(10, total_chunks)))
+            },
+            {
+                "description": "Primera mitad del documento",
+                "chunk_start": 1,
+                "chunk_end": total_chunks // 2,
+                "estimated_chars": sum(len(chunks[i]['_source'].get('content', '')) for i in range(total_chunks // 2))
+            },
+            {
+                "description": "Segunda mitad del documento",
+                "chunk_start": total_chunks // 2 + 1,
+                "chunk_end": total_chunks,
+                "estimated_chars": sum(len(chunks[i]['_source'].get('content', '')) for i in range(total_chunks // 2, total_chunks))
+            },
+            {
+                "description": "Final del documento (últimos 10 chunks)",
+                "chunk_start": max(1, total_chunks - 9),
+                "chunk_end": total_chunks,
+                "estimated_chars": sum(len(chunks[i]['_source'].get('content', '')) for i in range(max(0, total_chunks - 10), total_chunks))
+            }
+        ]
+        
+        # Si hay metadata de páginas, agregar rangos por página
+        if chunks and 'metadata' in chunks[0]['_source']:
+            total_pages = chunks[0]['_source']['metadata'].get('total_pages')
+            if total_pages:
+                # Estimar chunks por página
+                chunks_per_page = total_chunks / total_pages if total_pages > 0 else 1
+                
+                # Agregar algunos rangos de páginas útiles
+                page_ranges = [
+                    (1, min(10, total_pages), "Primeras 10 páginas"),
+                    (1, min(20, total_pages), "Primeras 20 páginas"),
+                    (max(1, total_pages // 2 - 5), min(total_pages, total_pages // 2 + 5), "Páginas centrales"),
+                    (max(1, total_pages - 9), total_pages, "Últimas 10 páginas"),
+                ]
+                
+                for start_page, end_page, desc in page_ranges:
+                    start_chunk = int((start_page - 1) * chunks_per_page) + 1
+                    end_chunk = min(int(end_page * chunks_per_page), total_chunks)
+                    
+                    chunk_ranges.append({
+                        "description": f"{desc} (páginas {start_page}-{end_page})",
+                        "chunk_start": start_chunk,
+                        "chunk_end": end_chunk,
+                        "page_start": start_page,
+                        "page_end": end_page,
+                        "estimated_chars": sum(len(chunks[i]['_source'].get('content', '')) 
+                                             for i in range(max(0, start_chunk-1), min(end_chunk, total_chunks)))
+                    })
+        
+        return {
+            "sections": sections if sections else [{
+                "id": "section_1",
+                "title": "Documento completo (sin estructura detectada)",
+                "level": 1,
+                "chunk_start": 1,
+                "chunk_end": total_chunks,
+                "type": "default"
+            }],
+            "chunk_ranges": chunk_ranges,
+            "total_sections_detected": len(sections),
+            "analysis_note": f"Estructura analizada desde los primeros {sample_size} chunks de {total_chunks} totales"
+        }
     
     def _get_all_chunks(self, file_path: str) -> List[Dict]:
         """Obtiene todos los chunks de un archivo usando scroll"""
+        # IMPORTANTE: El file_name en OpenSearch solo contiene el nombre del archivo,
+        # no el path completo de S3. Si el usuario proporciona un path completo
+        # (ej: "documents/archivo.pdf"), extraemos solo el nombre del archivo.
+        if '/' in file_path:
+            file_path = file_path.split('/')[-1]  # Tomar solo el nombre del archivo
+        
         # Normalizar el nombre del archivo (eliminar espacios extras)
         normalized_path = ' '.join(file_path.split())
         
@@ -398,6 +580,129 @@ class GetFileContent:
                 result_content += current_chunk
         
         return result_content
+    
+    def _load_structure_from_s3(self, file_path: str, chunks: List[Dict] = None) -> Optional[Dict[str, Any]]:
+        """
+        Carga la estructura pre-calculada del documento desde S3.
+        
+        La estructura está almacenada en:
+        s3://{bucket}/summaries/{file_hash}.json
+        
+        Args:
+            file_path: Nombre del archivo
+            chunks: Lista de chunks del documento (para obtener file_hash)
+            
+        Returns:
+            Dict con la estructura del documento o None si no existe
+        """
+        try:
+            import boto3
+            
+            # Obtener file_hash desde los chunks (es más confiable que calcular hash del nombre)
+            file_hash = None
+            if chunks and len(chunks) > 0:
+                # Extraer file_hash del chunk_id (formato: app_filehash_chunknum)
+                chunk_id = chunks[0]['_id']
+                parts = chunk_id.split('_')
+                if len(parts) >= 2:
+                    # El file_hash está en la segunda parte (después del app_name)
+                    file_hash = parts[1]
+            
+            if not file_hash:
+                self.logger.debug(f"No se pudo extraer file_hash de los chunks para {file_path}")
+                return None
+            
+            # Obtener configuración de S3
+            s3_config = self.config.get('s3', {})
+            bucket_name = s3_config.get('bucket_name')
+            summaries_prefix = s3_config.get('summaries_prefix', 'summaries/')
+            
+            if not bucket_name:
+                self.logger.debug("No S3 bucket configured")
+                return None
+            
+            # Construir ruta del archivo de estructura
+            structure_key = f"{summaries_prefix.rstrip('/')}/{file_hash}.json"
+            
+            # Intentar cargar desde S3
+            s3_client = boto3.client('s3', region_name=s3_config.get('region_name', 'eu-west-1'))
+            response = s3_client.get_object(Bucket=bucket_name, Key=structure_key)
+            
+            # Parsear JSON
+            structure_data = json.loads(response['Body'].read().decode('utf-8'))
+            
+            # Verificar que tenga el campo 'document_structure'
+            if 'document_structure' in structure_data:
+                self.logger.info(f"✅ Estructura cargada desde S3: {structure_key}")
+                return structure_data['document_structure']
+            
+            self.logger.debug(f"El resumen en S3 no contiene 'document_structure': {structure_key}")
+            return None
+            
+        except Exception as e:
+            self.logger.debug(f"No se pudo cargar estructura desde S3 para {file_path}: {str(e)}")
+            return None
+    
+    def _format_structure_response(self, file_path: str, chunks: List[Dict],
+                                   structure: Dict[str, Any], include_metadata: bool) -> Dict[str, Any]:
+        """
+        Formatea la respuesta con estructura pre-calculada desde S3.
+        
+        Args:
+            file_path: Nombre del archivo
+            chunks: Lista de chunks del documento
+            structure: Estructura pre-calculada
+            include_metadata: Si incluir metadatos
+            
+        Returns:
+            Dict con la respuesta formateada
+        """
+        # OPTIMIZACIÓN: Usar file_size de metadata en lugar de calcular iterando chunks
+        # Esto evita procesar todo el contenido de los chunks
+        total_length = 0
+        if chunks and chunks[0]['_source'].get('metadata'):
+            total_length = chunks[0]['_source']['metadata'].get('file_size', 0)
+        
+        # Fallback: si no hay metadata, calcular (pero esto debería ser raro)
+        if total_length == 0:
+            total_length = sum(len(chunk['_source'].get('content', '')) for chunk in chunks)
+        
+        result = {
+            "file_path": file_path,
+            "access_mode": "progressive",
+            "total_chunks": len(chunks),
+            "content_length": total_length,
+            "structure": structure,
+            "message": (
+                f"📄 Este archivo es grande ({total_length:,} caracteres, {len(chunks)} chunks). "
+                f"Se proporciona la estructura del documento (pre-calculada) para acceso eficiente.\n\n"
+                f"💡 Usa la herramienta 'get_file_section' para obtener secciones específicas por:\n"
+                f"   • Rango de chunks (ej: chunks 1-10)\n"
+                f"   • Rango de páginas (ej: páginas 5-15)\n"
+                f"   • ID de sección (ej: section_3)"
+            ),
+            "available_sections": structure.get("sections", []),
+            "chunk_ranges": structure.get("chunk_ranges", []),
+            "recommendation": (
+                "1. Revisa la estructura y tabla de contenidos\n"
+                "2. Identifica las secciones relevantes para tu consulta\n"
+                "3. Usa get_file_section para obtener el contenido específico"
+            ),
+            "structure_source": "s3_precalculated"
+        }
+        
+        # Incluir metadata si se solicita
+        if include_metadata and chunks:
+            result["metadata"] = chunks[0]['_source'].get('metadata', {})
+            result["file_info"] = {
+                "first_chunk_id": chunks[0]['_source'].get('chunk_id'),
+                "last_chunk_id": chunks[-1]['_source'].get('chunk_id'),
+                "file_extension": chunks[0]['_source'].get('metadata', {}).get('file_extension'),
+                "file_size": chunks[0]['_source'].get('metadata', {}).get('file_size'),
+                "total_pages": chunks[0]['_source'].get('metadata', {}).get('total_pages')
+            }
+        
+        return result
     
     def _get_available_files_sample(self) -> List[str]:
         """Obtiene una muestra de archivos disponibles para ayudar al usuario"""

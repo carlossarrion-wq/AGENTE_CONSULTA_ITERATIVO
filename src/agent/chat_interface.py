@@ -163,8 +163,8 @@ class ChatInterface:
         
         for result in tool_results:
             tool_name = result.tool_type.value if hasattr(result.tool_type, 'value') else str(result.tool_type)
-            
-            if result.success and result.data:
+
+            if result.success and result.data is not None:
                 # Formatear según el tipo de herramienta
                 if tool_name in ["semantic_search", "lexical_search", "regex_search"]:
                     message += self._format_search_results(result.data)
@@ -174,6 +174,11 @@ class ChatInterface:
                     message += f"{str(result.data)}\n\n"
             elif not result.success:
                 message += f"Error en {tool_name}: {result.error}\n\n"
+            else:
+                # CASO: success=True pero data es None o evaluó a False
+                self.logger.warning(f"⚠️  WARNING: {tool_name} exitosa pero data es None o vacío!")
+                self.logger.warning(f"   result.data = {result.data}")
+                message += f"⚠️ WARNING: {tool_name} se ejecutó exitosamente pero no devolvió datos.\n\n"
         
         return message
     
@@ -217,10 +222,53 @@ class ChatInterface:
         return formatted
     
     def _format_file_content(self, results: Dict[str, Any]) -> str:
-        """Formatea contenido de archivo completo"""
+        """
+        Formatea contenido de archivo COMPLETO para el LLM.
+        
+        Maneja dos modos:
+        1. Modo completo: Envía el contenido completo del archivo
+        2. Modo progresivo: Envía la estructura del documento para que el LLM solicite secciones específicas
+        """
         formatted = ""
         
-        if 'content' in results:
+        # Verificar si es modo progresivo
+        access_mode = results.get('access_mode', 'full')
+        
+        if access_mode == 'progressive':
+            # MODO PROGRESIVO: Archivo grande, enviar estructura
+            import json
+            
+            file_path = results.get('file_path', 'archivo')
+            content_length = results.get('content_length', 0)
+            message = results.get('message', '')
+            
+            formatted += f"📄 **Archivo**: {file_path}\n"
+            formatted += f"⚠️  **Modo de acceso**: PROGRESIVO (archivo grande)\n"
+            formatted += f"📏 **Tamaño**: {content_length:,} caracteres\n\n"
+            formatted += f"**Mensaje**: {message}\n\n"
+            
+            # Enviar estructura completa del documento
+            if 'structure' in results:
+                structure = results['structure']
+                formatted += f"📋 **ESTRUCTURA DEL DOCUMENTO**:\n\n"
+                formatted += f"```json\n{json.dumps(structure, indent=2, ensure_ascii=False)}\n```\n\n"
+            
+            # Secciones disponibles
+            if 'available_sections' in results:
+                formatted += f"📑 **Secciones disponibles**: {results['available_sections']}\n\n"
+            
+            # Rangos de chunks
+            if 'chunk_ranges' in results:
+                formatted += f"📊 **Rangos de chunks**: {results['chunk_ranges']}\n\n"
+            
+            # Recomendación
+            if 'recommendation' in results:
+                formatted += f"💡 **Recomendación**: {results['recommendation']}\n\n"
+            
+            formatted += "**INSTRUCCIÓN**: Analiza la estructura y usa `tool_get_file_section` para obtener las secciones relevantes.\n"
+            
+        elif 'content' in results:
+            # MODO COMPLETO: Archivo pequeño, enviar contenido completo
             content = results['content']
             file_name = results.get('file_name', 'archivo')
             
@@ -233,6 +281,13 @@ class ChatInterface:
                 formatted += f"\n**Metadata del archivo:**\n"
                 for key, value in results['metadata'].items():
                     formatted += f"- {key}: {value}\n"
+        else:
+            # CASO DE ERROR: No hay ni modo progresivo ni contenido
+            self.logger.error(f"❌ ERROR: _format_file_content recibió results sin 'access_mode' ni 'content'")
+            self.logger.error(f"Results keys: {list(results.keys())}")
+            self.logger.error(f"Results completo: {str(results)[:500]}")
+            formatted += f"⚠️ ERROR: No se pudo formatear el contenido del archivo.\n"
+            formatted += f"Estructura de resultados inesperada: {list(results.keys())}\n"
         
         return formatted
     

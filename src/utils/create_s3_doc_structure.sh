@@ -19,16 +19,19 @@ NC='\033[0m' # No Color
 # Función para mostrar uso
 show_usage() {
     echo -e "${BLUE}Uso:${NC}"
-    echo "  $0 <bucket-name> [region]"
+    echo "  $0 <bucket-name> [region] [path-prefix]"
     echo ""
     echo -e "${BLUE}Parámetros:${NC}"
     echo "  bucket-name : Nombre del bucket S3 (requerido)"
     echo "  region      : Región de AWS (opcional, por defecto: eu-west-1)"
+    echo "  path-prefix : Prefijo de ruta dentro del bucket (opcional, ej: documents/)"
     echo ""
     echo -e "${BLUE}Ejemplos:${NC}"
     echo "  $0 my-docs-bucket"
-    echo "  $0 my-docs-bucket us-east-1"
-    echo "  $0 arn:aws:s3:::my-docs-bucket eu-west-1"
+    echo "  $0 my-docs-bucket eu-west-1"
+    echo "  $0 my-docs-bucket eu-west-1 documents/"
+    echo "  $0 rag-system-darwin-eu-west-1 eu-west-1 documents/"
+    echo "  $0 arn:aws:s3:::my-docs-bucket eu-west-1 applications/sap/"
     exit 1
 }
 
@@ -47,21 +50,25 @@ create_s3_folder() {
     local bucket=$1
     local folder_path=$2
     local region=$3
+    local path_prefix=$4
     
-    echo -e "${YELLOW}Creando carpeta:${NC} $folder_path"
+    # Combinar prefijo con ruta de carpeta
+    local full_path="${path_prefix}${folder_path}"
+    
+    echo -e "${YELLOW}Creando carpeta:${NC} $full_path"
     
     # Crear un objeto vacío con trailing slash para simular carpeta
     aws s3api put-object \
         --bucket "$bucket" \
-        --key "${folder_path}/" \
+        --key "${full_path}/" \
         --region "$region" \
         --content-length 0 \
         > /dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓${NC} Carpeta creada: $folder_path/"
+        echo -e "${GREEN}✓${NC} Carpeta creada: $full_path/"
     else
-        echo -e "${RED}✗${NC} Error al crear carpeta: $folder_path/"
+        echo -e "${RED}✗${NC} Error al crear carpeta: $full_path/"
         return 1
     fi
 }
@@ -72,8 +79,12 @@ create_readme() {
     local folder_path=$2
     local region=$3
     local content=$4
+    local path_prefix=$5
     
-    echo -e "${YELLOW}Creando README:${NC} ${folder_path}/README.md"
+    # Combinar prefijo con ruta de carpeta
+    local full_path="${path_prefix}${folder_path}"
+    
+    echo -e "${YELLOW}Creando README:${NC} ${full_path}/README.md"
     
     # Crear archivo temporal
     local temp_file=$(mktemp)
@@ -81,14 +92,14 @@ create_readme() {
     
     # Subir archivo a S3
     aws s3 cp "$temp_file" \
-        "s3://${bucket}/${folder_path}/README.md" \
+        "s3://${bucket}/${full_path}/README.md" \
         --region "$region" \
         > /dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓${NC} README creado: ${folder_path}/README.md"
+        echo -e "${GREEN}✓${NC} README creado: ${full_path}/README.md"
     else
-        echo -e "${RED}✗${NC} Error al crear README: ${folder_path}/README.md"
+        echo -e "${RED}✗${NC} Error al crear README: ${full_path}/README.md"
     fi
     
     # Limpiar archivo temporal
@@ -104,15 +115,29 @@ fi
 # Parámetros
 BUCKET_INPUT=$1
 REGION=${2:-eu-west-1}
+PATH_PREFIX=${3:-""}
 
 # Extraer nombre del bucket (por si viene como ARN)
 BUCKET_NAME=$(extract_bucket_name "$BUCKET_INPUT")
+
+# Normalizar path prefix (asegurar que termine con / si no está vacío)
+if [ -n "$PATH_PREFIX" ]; then
+    # Remover / inicial si existe
+    PATH_PREFIX="${PATH_PREFIX#/}"
+    # Asegurar / final si no existe
+    if [[ ! "$PATH_PREFIX" =~ /$ ]]; then
+        PATH_PREFIX="${PATH_PREFIX}/"
+    fi
+fi
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}  Creación de Estructura de Documentación en S3${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}Bucket:${NC} $BUCKET_NAME"
 echo -e "${BLUE}Región:${NC} $REGION"
+if [ -n "$PATH_PREFIX" ]; then
+    echo -e "${BLUE}Prefijo de ruta:${NC} $PATH_PREFIX"
+fi
 echo ""
 
 # Verificar que AWS CLI está instalado
@@ -157,7 +182,7 @@ CURRENT=0
 for folder in "${FOLDERS[@]}"; do
     CURRENT=$((CURRENT + 1))
     echo -e "${BLUE}[$CURRENT/$TOTAL_FOLDERS]${NC}"
-    create_s3_folder "$BUCKET_NAME" "$folder" "$REGION"
+    create_s3_folder "$BUCKET_NAME" "$folder" "$REGION" "$PATH_PREFIX"
     echo ""
 done
 
@@ -185,7 +210,7 @@ Este bucket contiene la documentación completa del sistema organizada en las si
 Para más información, consulte ESTRUCTURA_DOCUMENTACION.md
 "
 
-create_readme "$BUCKET_NAME" "" "$REGION" "$MAIN_README"
+create_readme "$BUCKET_NAME" "" "$REGION" "$MAIN_README" "$PATH_PREFIX"
 
 echo ""
 echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
@@ -194,11 +219,23 @@ echo -e "${GREEN}═════════════════════
 echo ""
 echo -e "${BLUE}Bucket S3:${NC} s3://${BUCKET_NAME}"
 echo -e "${BLUE}Región:${NC} $REGION"
+if [ -n "$PATH_PREFIX" ]; then
+    echo -e "${BLUE}Prefijo de ruta:${NC} $PATH_PREFIX"
+    echo -e "${BLUE}Ruta completa:${NC} s3://${BUCKET_NAME}/${PATH_PREFIX}"
+fi
 echo -e "${BLUE}Total de carpetas creadas:${NC} $TOTAL_FOLDERS"
 echo ""
 echo -e "${YELLOW}Para ver la estructura:${NC}"
-echo "  aws s3 ls s3://${BUCKET_NAME}/ --recursive --region $REGION"
+if [ -n "$PATH_PREFIX" ]; then
+    echo "  aws s3 ls s3://${BUCKET_NAME}/${PATH_PREFIX} --recursive --region $REGION"
+else
+    echo "  aws s3 ls s3://${BUCKET_NAME}/ --recursive --region $REGION"
+fi
 echo ""
 echo -e "${YELLOW}Para subir archivos:${NC}"
-echo "  aws s3 cp archivo.pdf s3://${BUCKET_NAME}/01_Arquitectura_Sistema/Diagramas/ --region $REGION"
+if [ -n "$PATH_PREFIX" ]; then
+    echo "  aws s3 cp archivo.pdf s3://${BUCKET_NAME}/${PATH_PREFIX}01_Arquitectura_Sistema/Diagramas/ --region $REGION"
+else
+    echo "  aws s3 cp archivo.pdf s3://${BUCKET_NAME}/01_Arquitectura_Sistema/Diagramas/ --region $REGION"
+fi
 echo ""

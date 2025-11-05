@@ -45,9 +45,9 @@ s3:
   bucket_arn: "arn:aws:s3:::rag-system-mulesoft-eu-west-1"
   bucket_name: "rag-system-mulesoft-eu-west-1"
   region_name: "eu-west-1"
-  documents_prefix: "applications/mulesoft/documents/"
-  summaries_prefix: "applications/mulesoft/summaries/"
-  inventory_prefix: "applications/mulesoft/inventory/"
+  documents_prefix: "documents/"
+  summaries_prefix: "summaries/"
+  inventory_prefix: "inventory/"
   mock_mode: false
 
 # Configuración por defecto para las herramientas

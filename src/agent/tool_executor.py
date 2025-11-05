@@ -27,6 +27,7 @@ from tools.tool_semantic_search import SemanticSearch
 from tools.tool_lexical_search import LexicalSearch
 from tools.tool_regex_search import RegexSearch
 from tools.tool_get_file_content import GetFileContent
+from tools.tool_get_file_section import GetFileSection
 from tools.tool_web_crawler import execute_web_crawler
 from agent.color_utils import tool_result as color_tool_result
 
@@ -37,6 +38,7 @@ class ToolType(Enum):
     LEXICAL_SEARCH = "lexical_search"
     REGEX_SEARCH = "regex_search"
     GET_FILE_CONTENT = "get_file_content"
+    GET_FILE_SECTION = "get_file_section"
     WEB_CRAWLER = "web_crawler"
 
 
@@ -92,6 +94,7 @@ class ToolExecutor:
             self.lexical_search = LexicalSearch(config_path)
             self.regex_search = RegexSearch(config_path)
             self.get_file_content = GetFileContent(config_path)
+            self.get_file_section = GetFileSection(config_path=config_path, app_name=app_name)
             self.logger.info("Todas las herramientas inicializadas correctamente")
         except Exception as e:
             self.logger.error(f"Error inicializando herramientas: {str(e)}")
@@ -122,6 +125,7 @@ class ToolExecutor:
             ToolType.LEXICAL_SEARCH: r'<tool_lexical_search>(.*?)</tool_lexical_search>',
             ToolType.REGEX_SEARCH: r'<tool_regex_search>(.*?)</tool_regex_search>',
             ToolType.GET_FILE_CONTENT: r'<tool_get_file_content>(.*?)</tool_get_file_content>',
+            ToolType.GET_FILE_SECTION: r'<tool_get_file_section>(.*?)</tool_get_file_section>',
             ToolType.WEB_CRAWLER: r'<tool_web_crawler>(.*?)</tool_web_crawler>',
         }
         
@@ -220,6 +224,9 @@ class ToolExecutor:
             
             elif tool_type == ToolType.GET_FILE_CONTENT:
                 result = self.get_file_content.get_content(**params)
+            
+            elif tool_type == ToolType.GET_FILE_SECTION:
+                result = self.get_file_section.get_section(**params)
             
             elif tool_type == ToolType.WEB_CRAWLER:
                 # Inyectar app_name en los parámetros si no está presente
@@ -320,11 +327,36 @@ class ToolExecutor:
         
         elif tool_type == ToolType.GET_FILE_CONTENT:
             file_path = result.get('file_path', 'N/A')
-            content = result.get('content', '')
-            content_length = len(content)
+            access_mode = result.get('access_mode', 'full')
+            
             formatted = f"Archivo: {file_path}\n"
-            formatted += f"Tamaño del contenido: {content_length} caracteres\n"
-            formatted += f"\nPrimeros 300 caracteres:\n{content[:300]}...\n"
+            formatted += f"Modo de acceso: {access_mode}\n"
+            
+            # Si es modo progresivo, mostrar estructura completa
+            if access_mode == 'progressive':
+                formatted += f"\n⚠️  ARCHIVO GRANDE - MODO PROGRESIVO ACTIVADO\n"
+                formatted += f"Tamaño: {result.get('content_length', 'N/A')} caracteres\n"
+                formatted += f"Mensaje: {result.get('message', 'N/A')}\n"
+                
+                if 'structure' in result:
+                    structure = result['structure']
+                    formatted += f"\n📋 ESTRUCTURA DEL DOCUMENTO:\n"
+                    formatted += json.dumps(structure, indent=2, ensure_ascii=False)
+                
+                if 'available_sections' in result:
+                    formatted += f"\n\n📑 Secciones disponibles: {result['available_sections']}\n"
+                
+                if 'chunk_ranges' in result:
+                    formatted += f"\n📊 Rangos de chunks: {result['chunk_ranges']}\n"
+                
+                if 'recommendation' in result:
+                    formatted += f"\n💡 Recomendación: {result['recommendation']}\n"
+            else:
+                # Modo completo - mostrar contenido
+                content = result.get('content', '')
+                content_length = len(content)
+                formatted += f"Tamaño del contenido: {content_length} caracteres\n"
+                formatted += f"\nPrimeros 300 caracteres:\n{content[:300]}...\n"
             
             return formatted
         
