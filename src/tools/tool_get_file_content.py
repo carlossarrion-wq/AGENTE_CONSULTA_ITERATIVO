@@ -48,8 +48,7 @@ class GetFileContent:
     @handle_search_error
     @log_search_metrics
     @validate_parameters(['file_path'])
-    def get_content(self, file_path: str, 
-                   include_metadata: Optional[bool] = None) -> Dict[str, Any]:
+    def get_content(self, file_path: str) -> Dict[str, Any]:
         """
         Obtiene el contenido completo de un archivo específico.
         Si el archivo es muy grande, devuelve la estructura del documento
@@ -57,13 +56,12 @@ class GetFileContent:
         
         Args:
             file_path: Nombre del archivo tal como aparece en el índice
-            include_metadata: Incluir metadatos adicionales
             
         Returns:
             Dict con el contenido del archivo o su estructura si es muy grande
         """
-        # Aplicar valores por defecto
-        include_metadata = include_metadata if include_metadata is not None else self.defaults.get('include_metadata', False)
+        # FORZAR metadata a False para evitar overflow
+        include_metadata = False
         
         # Validar parámetros
         if not isinstance(file_path, str) or len(file_path.strip()) == 0:

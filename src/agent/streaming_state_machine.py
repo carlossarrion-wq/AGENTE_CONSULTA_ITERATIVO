@@ -47,6 +47,9 @@ class StreamingStateMachine:
         # Buffer de acumulación
         self.buffer = ""
         
+        # Buffer para preprocesamiento de saltos de línea
+        self._newline_buffer = ""
+        
         # Configuración de tags de apertura
         self.opening_tags: Dict[str, StreamState] = {
             '<thinking>': StreamState.IN_THINKING,
@@ -101,6 +104,9 @@ class StreamingStateMachine:
         Args:
             token: Token recibido del stream
         """
+        # Preprocesar token para eliminar saltos de línea consecutivos
+        token = self._preprocess_token(token)
+        
         # Acumular en buffer y en texto completo
         self.buffer += token
         self.accumulated_text += token
@@ -421,6 +427,48 @@ class StreamingStateMachine:
             Tamaño del buffer en caracteres
         """
         return len(self.buffer)
+    
+    def _preprocess_token(self, token: str) -> str:
+        """
+        Preprocesa un token para eliminar saltos de línea consecutivos
+        
+        Estrategia: Acumula caracteres en un buffer temporal y solo libera
+        cuando está seguro de que no hay más saltos de línea consecutivos.
+        
+        Convierte secuencias de \n\n (o más) en un solo \n
+        
+        Args:
+            token: Token recibido del stream
+            
+        Returns:
+            Token procesado (puede ser vacío si aún está acumulando)
+        """
+        processed = ""
+        
+        for char in token:
+            if char == '\n':
+                # Acumular newlines
+                self._newline_buffer += char
+            else:
+                # Carácter no-newline: procesar buffer de newlines acumulado
+                if self._newline_buffer:
+                    # Contar cuántos \n hay acumulados
+                    newline_count = len(self._newline_buffer)
+                    
+                    if newline_count >= 2:
+                        # Dos o más \n consecutivos -> reducir a uno solo
+                        processed += '\n'
+                    elif newline_count == 1:
+                        # Un solo \n -> mantenerlo
+                        processed += '\n'
+                    
+                    # Limpiar buffer
+                    self._newline_buffer = ""
+                
+                # Agregar el carácter no-newline
+                processed += char
+        
+        return processed
 
 
 def main():
