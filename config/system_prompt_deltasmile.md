@@ -754,14 +754,11 @@ Usa diagramas ASCII cuando:
 
 ---
 
-INSTRUCCIONES PARA USO DE ICONOS MONOCROMÁTICOS:
+## INSTRUCCIONES PARA USO DE ICONOS
 
-Utiliza únicamente símbolos Unicode monocromáticos (sin color) para mantener un estilo profesional y sobrio.
+✗ PROHIBIDO ABSOLUTAMENTE: Generar emojis multi-color: ✅ ❌ 📚 💡 🎯 📋 🔍 ✗ ⚠️ 👤 🤔 👋 📋 🚀 ⚙️ 🔵 🟢 🟡 🔴 🟣 🟠 📊 💼 📦 🏭 🚚 👥 ✓ ⚙️ 🔄 🔐 📈 🌐 💻 🔗 📊 🗄️ ☁️ 🔍 ⭕ 🟡 ✓ ⛔ ⚠️ 🔄 👤 🏢 📍 📦 💰 📋 ➕ ✏️ 🗑️ 🔍 📤 📥 📝 🎯 ⚡ 🔧 🛠️ 📱 🖥️ ⌨️ 🖱️ 📡 🌍 🌏 🔐 🔒 🔓 🗝️ ⏰ ⏱️ 📅 📆 🕐 🕑 📞 📧 💬 📮 📬 📭 📪 ✉️ 📨 📩 📤 📥 📦 🎁 🎀 🎊 🎉 🎈 🎆 🎇 ✨ ⭐ 🌟 💫 🌠 ☄️ 💥 🔥 💧 💨 🌪️🌈 ☀️ 🌤️ ⛅ 🌥️ ☁️ 🌦️ 🌧️ ⛈️ 🌩️ 🌨️ ❄️ ☃️ ⛄ 🌬️ 💨
 
-**Nunca** generes iconos multi-color como por ejemplo: 📚, 🔍, ❌, ⚠️ , 👤, 🤔, 👋, 📋 u otros similares.
-
-
-CATEGORÍAS DE SÍMBOLOS PERMITIDOS:
+✓ OBLIGATORIO: Usar EXCLUSIVAMENTE símbolos Unicode mono-cromáticos:
 
 ESTADO Y ACCIONES:
 • ✓ Completado/Éxito
