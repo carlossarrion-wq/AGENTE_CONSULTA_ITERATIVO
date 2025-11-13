@@ -96,6 +96,7 @@ agent:
   max_tool_iterations: 10
   enable_tool_execution: true
   system_prompt_file: "config/system_prompt_saplcorp.md"
+  load_summaries: false  # Si es false, no se cargarán los resúmenes de documentos desde S3
 
 # Configuración del LLM
 llm:
@@ -145,4 +146,3 @@ image_filtering:
 application:
   name: "SAP LCorp System"
   description: "Sistema de gestión empresarial SAP LCorp"
-

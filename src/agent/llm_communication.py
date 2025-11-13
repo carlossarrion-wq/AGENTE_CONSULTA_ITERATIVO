@@ -105,15 +105,21 @@ class LLMCommunication:
         self.config = ConfigManager(config_path)
         self.logger = logging.getLogger(__name__)
         
-        # Obtener configuración de S3 desde el archivo de configuración
-        s3_config = self.config.get_section('s3')
-        
-        # Inicializar S3 Summaries Loader con la configuración correcta
-        self.s3_loader = S3SummariesLoader(s3_config=s3_config)
-        
-        # Leer ruta del system prompt desde configuración
+        # Leer configuración del agente
         agent_config = self.config.get_section('agent')
         system_prompt_file = agent_config.get('system_prompt_file', 'config/system_prompt_darwin.md')
+        
+        # Verificar si se deben cargar los resúmenes
+        self.load_summaries = agent_config.get('load_summaries', True)
+        
+        # Inicializar S3 Summaries Loader solo si está habilitado
+        if self.load_summaries:
+            s3_config = self.config.get_section('s3')
+            self.s3_loader = S3SummariesLoader(s3_config=s3_config)
+            self.logger.info("✅ Carga de resúmenes desde S3 HABILITADA")
+        else:
+            self.s3_loader = None
+            self.logger.info("⚠️  Carga de resúmenes desde S3 DESHABILITADA por configuración")
         
         # Cargar system prompt desde archivo de texto (con resúmenes dinámicos desde S3)
         self.system_prompt = self._load_system_prompt(system_prompt_file)
@@ -169,10 +175,15 @@ class LLMCommunication:
             
             # Buscar el marcador {{DYNAMIC_SUMMARIES}} y reemplazarlo con los resúmenes de S3
             if "{{DYNAMIC_SUMMARIES}}" in prompt_template:
-                self.logger.info("📥 Cargando resúmenes dinámicamente desde S3...")
-                summaries_section = self.s3_loader.get_summaries_section()
-                prompt = prompt_template.replace("{{DYNAMIC_SUMMARIES}}", summaries_section)
-                self.logger.info(f"✅ Resúmenes cargados y populados en el system prompt")
+                if self.load_summaries:
+                    self.logger.info("📥 Cargando resúmenes dinámicamente desde S3...")
+                    summaries_section = self.s3_loader.get_summaries_section()
+                    prompt = prompt_template.replace("{{DYNAMIC_SUMMARIES}}", summaries_section)
+                    self.logger.info(f"✅ Resúmenes cargados y populados en el system prompt")
+                else:
+                    # Si load_summaries es false, reemplazar el marcador con cadena vacía
+                    prompt = prompt_template.replace("{{DYNAMIC_SUMMARIES}}", "")
+                    self.logger.info("ℹ️  Carga de resúmenes DESHABILITADA - marcador {{DYNAMIC_SUMMARIES}} eliminado")
             else:
                 # Si no hay marcador, usar el prompt tal cual
                 prompt = prompt_template

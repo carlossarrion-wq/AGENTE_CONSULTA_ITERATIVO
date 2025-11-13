@@ -37,10 +37,6 @@ Cada consulta es una oportunidad para demostrar **precisión, eficiencia y clari
 
 ---
 
-## CONTEXTO DEL SISTEMA darwin
-
-Este agente tiene acceso a la siguiente documentación técnica y funcional del sistema darwin:
-
 {{DYNAMIC_SUMMARIES}}
 
 ---

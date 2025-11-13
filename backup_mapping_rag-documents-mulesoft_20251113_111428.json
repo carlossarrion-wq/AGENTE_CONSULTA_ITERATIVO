@@ -1,0 +1,337 @@
+{
+  "rag-documents-mulesoft": {
+    "mappings": {
+      "properties": {
+        "application_id": {
+          "type": "keyword"
+        },
+        "application_name": {
+          "type": "keyword"
+        },
+        "chunk_id": {
+          "type": "keyword"
+        },
+        "chunk_index": {
+          "type": "integer"
+        },
+        "content": {
+          "type": "text",
+          "analyzer": "standard"
+        },
+        "document_type": {
+          "type": "keyword"
+        },
+        "embedding": {
+          "type": "knn_vector",
+          "dimension": 1024
+        },
+        "file_name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          },
+          "analyzer": "standard"
+        },
+        "file_path": {
+          "type": "keyword"
+        },
+        "has_images": {
+          "type": "boolean"
+        },
+        "image_base64": {
+          "type": "text",
+          "index": false
+        },
+        "image_count": {
+          "type": "integer"
+        },
+        "metadata": {
+          "properties": {
+            "application_id": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "application_name": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "chunk_config": {
+              "properties": {
+                "chunk_overlap": {
+                  "type": "long"
+                },
+                "chunk_size": {
+                  "type": "long"
+                }
+              }
+            },
+            "chunk_index": {
+              "type": "long"
+            },
+            "chunk_length": {
+              "type": "long"
+            },
+            "chunk_method": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "chunk_position": {
+              "type": "long"
+            },
+            "chunk_type": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "contains_codes": {
+              "type": "boolean"
+            },
+            "content_type": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "docx_images": {
+              "type": "long"
+            },
+            "docx_images_converted": {
+              "type": "long"
+            },
+            "docx_images_skipped": {
+              "type": "long"
+            },
+            "docx_paragraphs": {
+              "type": "long"
+            },
+            "docx_processed": {
+              "type": "boolean"
+            },
+            "docx_tables": {
+              "type": "long"
+            },
+            "file_extension": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "file_size": {
+              "type": "long"
+            },
+            "has_image": {
+              "type": "boolean"
+            },
+            "has_images": {
+              "type": "boolean"
+            },
+            "has_structured_content": {
+              "type": "boolean"
+            },
+            "has_structured_data": {
+              "type": "boolean"
+            },
+            "has_visual_content": {
+              "type": "boolean"
+            },
+            "image_base64": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "image_context": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "image_format": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "image_id": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "image_index": {
+              "type": "long"
+            },
+            "image_size": {
+              "type": "long"
+            },
+            "image_source": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "indexed_at": {
+              "type": "date"
+            },
+            "is_multimodal": {
+              "type": "boolean"
+            },
+            "module": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "preservation_method": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "related_text_chunks": {
+              "type": "long"
+            },
+            "s3_bucket": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "s3_prefix": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "semantic_chunk_index": {
+              "type": "long"
+            },
+            "table_chunk_end_row": {
+              "type": "long"
+            },
+            "table_chunk_index": {
+              "type": "long"
+            },
+            "table_chunk_start_row": {
+              "type": "long"
+            },
+            "table_columns_count": {
+              "type": "long"
+            },
+            "table_format": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "table_headers": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "table_rows_count": {
+              "type": "long"
+            },
+            "table_total_rows": {
+              "type": "long"
+            },
+            "technical_codes": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "total_chunks": {
+              "type": "long"
+            },
+            "total_image_chunks": {
+              "type": "long"
+            },
+            "total_images_in_document": {
+              "type": "long"
+            },
+            "total_text_chunks": {
+              "type": "long"
+            }
+          }
+        },
+        "s3_bucket": {
+          "type": "keyword"
+        },
+        "s3_prefix": {
+          "type": "keyword"
+        },
+        "timestamp": {
+          "type": "date"
+        },
+        "title": {
+          "type": "text"
+        }
+      }
+    }
+  }
+}

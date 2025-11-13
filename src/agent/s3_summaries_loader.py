@@ -152,15 +152,17 @@ class S3SummariesLoader:
             "files": []
         }
     
-    def format_summaries_for_prompt(self, catalog: Optional[Dict[str, Any]] = None) -> str:
+    def format_summaries_for_prompt(self, catalog: Optional[Dict[str, Any]] = None, app_name: str = "darwin") -> str:
         """
         Formatea los resúmenes en el formato esperado por el system prompt
+        INCLUYE el encabezado de contexto del sistema
         
         Args:
             catalog: Catálogo de resúmenes (si es None, lo carga desde S3)
+            app_name: Nombre de la aplicación para el encabezado (default: "darwin")
             
         Returns:
-            String formateado para incluir en el system prompt
+            String formateado para incluir en el system prompt con encabezado
         """
         if catalog is None:
             catalog = self.load_summaries_from_s3()
@@ -168,8 +170,10 @@ class S3SummariesLoader:
         metadata = catalog.get('metadata', {})
         files = catalog.get('files', [])
         
-        # Construir la sección formateada
-        output = "### Archivos Indexados Disponibles\n\n"
+        # Construir la sección formateada CON ENCABEZADO
+        output = f"## TIENES A TU DISPOSICIÓN LOS SIGUIENTES DOCUMENTOS DE CONTEXTO DEL SISTEMA {app_name.upper()}\n\n"
+        output += f"Este agente tiene acceso a la siguiente documentación técnica y funcional del sistema {app_name}:\n\n"
+        output += "### Archivos Indexados Disponibles\n\n"
         output += "Los siguientes archivos están indexados y disponibles en OpenSearch para consulta:\n\n"
         output += "```\n"
         output += json.dumps(catalog, indent=2, ensure_ascii=False)
@@ -178,9 +182,10 @@ class S3SummariesLoader:
         output += "- __file_name__: Nombre del documento original (ej: \"Dashboard.docx\")\n"
         output += "- __file_size__: Tamaño del documento original en bytes\n"
         output += "- __file_extension__: Extensión del documento original (.docx, .pdf, .xlsx, .txt)\n"
-        output += "- __summary_id__: Identificador del archivo JSON de resumen que contiene el análisis\n"
         output += "- __summary__: Resumen del contenido del documento original\n"
-        output += "- __application_id__: Identificador de la aplicación (siempre \"darwin\")\n"
+        output += "- __topics__: Temas principales del documento\n"
+        output += "- __key_terms__: Términos clave del documento\n"
+        output += f"- __application_id__: Identificador de la aplicación (siempre \"{app_name}\")\n"
         
         return output
     

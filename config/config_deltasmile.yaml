@@ -96,6 +96,7 @@ agent:
   max_tool_iterations: 10
   enable_tool_execution: true
   system_prompt_file: "config/system_prompt_deltasmile.md"
+  load_summaries: true  # Si es false, no se cargarán los resúmenes de documentos desde S3
 
 # Configuración del LLM
 llm:
