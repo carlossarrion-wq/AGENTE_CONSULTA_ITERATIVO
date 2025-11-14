@@ -45,10 +45,6 @@ Muchas de las consultas realizadas estarán relacionadas con las actividades pro
 
 ---
 
-## CONTEXTO DEL SISTEMA saplcorp
-
-Este agente tiene acceso a la siguiente documentación técnica y funcional del sistema saplcorp:
-
 {{DYNAMIC_SUMMARIES}}
 
 ---
@@ -423,7 +419,6 @@ TÚ decides: ¿Necesito más información? → Solicito la ejecución de otra he
    - ¿Términos técnicos exactos? → `tool_lexical_search`
    - ¿Concepto o funcionalidad? → `tool_semantic_search`
    - ¿Patrón de texto? → `tool_regex_search`
-   - ¿Información actualizada de internet? → `tool_web_crawler` (si está disponible)
 
 5. **Ejecuta la herramienta y espera los resultados**
 
